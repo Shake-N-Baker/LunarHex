@@ -22,14 +22,19 @@ package
 	public class Main extends Sprite 
 	{
 		/**
-		 * The size of the square encompassing a hexagon tile of the board
+		 * The width of the square encompassing a hexagon tile of the board
 		 */
-		private const HEX_SIZE:int = 80;
+		private const HEX_WIDTH:int = 80;
+		
+		/**
+		 * The height of the square encompassing a hexagon tile of the board
+		 */
+		private const HEX_HEIGHT:int = 60;
 		
 		/**
 		 * the top left corner of the square encompassing the tiled board
 		 */
-		private const BOARD_TOP_LEFT:Point = new Point(25, 35);
+		private const BOARD_TOP_LEFT:Point = new Point(50, 100);
 		
 		/**
 		 * Canvas to display
@@ -111,18 +116,18 @@ package
 			canvas = new Bitmap(canvasBD);
 			addChild(canvas);
 			bounding_box = getBoundingBoxes();
-			board = new Rectangle(BOARD_TOP_LEFT.x, BOARD_TOP_LEFT.y, (5 * HEX_SIZE * 0.75) + (0.25 * HEX_SIZE), (6 * HEX_SIZE));
+			board = new Rectangle(BOARD_TOP_LEFT.x, BOARD_TOP_LEFT.y, (5 * HEX_WIDTH * 0.75) + (0.25 * HEX_WIDTH), (6 * HEX_HEIGHT));
 			hex_select = -1;
 			
 			// Setup hexagon to check mouse against
-			hexCheck = new BitmapData(HEX_SIZE, HEX_SIZE);
-			var side_length:Number = HEX_SIZE / 2;
-			var center_offset:Number = (HEX_SIZE - side_length) / 2;
-			hexCheck.fillRect(new Rectangle(center_offset, 0, side_length, HEX_SIZE), 0xFFFF0000);
+			hexCheck = new BitmapData(HEX_WIDTH, HEX_HEIGHT);
+			var side_length:Number = HEX_WIDTH / 2;
+			var center_offset:Number = (HEX_WIDTH - side_length) / 2;
+			hexCheck.fillRect(new Rectangle(center_offset, 0, side_length, HEX_HEIGHT), 0xFFFF0000);
 			var triangle_sprite:Sprite = new Sprite();
 			triangle_sprite.graphics.beginFill(0xFF0000);
-			triangle_sprite.graphics.drawTriangles(Vector.<Number>([center_offset, 0, 0, HEX_SIZE / 2, center_offset, HEX_SIZE]));
-			triangle_sprite.graphics.drawTriangles(Vector.<Number>([center_offset + side_length, 0, HEX_SIZE, HEX_SIZE / 2, center_offset + side_length, HEX_SIZE]));
+			triangle_sprite.graphics.drawTriangles(Vector.<Number>([center_offset, 0, 0, HEX_HEIGHT / 2, center_offset, HEX_HEIGHT]));
+			triangle_sprite.graphics.drawTriangles(Vector.<Number>([center_offset + side_length, 0, HEX_WIDTH, HEX_HEIGHT / 2, center_offset + side_length, HEX_HEIGHT]));
 			triangle_sprite.graphics.endFill();
 			hexCheck.draw(triangle_sprite);
 			
@@ -165,7 +170,7 @@ package
 		{
 			drawBoard();
 			var highlight_hex:int = findHex();
-			if (highlight_hex != -1) drawHex(bounding_box[highlight_hex].x, bounding_box[highlight_hex].y, HEX_SIZE);
+			if (highlight_hex != -1) drawHex(bounding_box[highlight_hex].x, bounding_box[highlight_hex].y, HEX_WIDTH, HEX_HEIGHT);
 			drawObjectsOnBoard();
 		}
 		
@@ -523,28 +528,29 @@ package
 		private function getBoundingBoxes():Vector.<Rectangle>
 		{
 			var list:Vector.<Rectangle> = new Vector.<Rectangle>();
-			var size:int = HEX_SIZE;
+			var width:int = HEX_WIDTH;
+			var height:int = HEX_HEIGHT;
 			var start_x:int = BOARD_TOP_LEFT.x;
-			var start_y:int = BOARD_TOP_LEFT.y + (size / 2);
+			var start_y:int = BOARD_TOP_LEFT.y + (height / 2);
 			var x:int = start_x;
 			var y:int = start_y;
 			for (var i:int = 0; i < 5; i++) 
 			{
 				for (var j:int = 0; j < 5; j++) 
 				{
-					list.push(new Rectangle(x, y, size, size));
-					x += size * 0.75;
-					if (j % 2 == 0) y -= size * 0.5;
-					else y += size * 0.5;
+					list.push(new Rectangle(x, y, width, height));
+					x += width * 0.75;
+					if (j % 2 == 0) y -= height * 0.5;
+					else y += height * 0.5;
 				}
-				x = 25;
-				y += size * 1.5;
+				x = start_x;
+				y += height * 1.5;
 			}
-			x = start_x + (0.75 * size);
-			y -= size * 0.5;
-			list.push(new Rectangle(x, y, size, size));
-			x = start_x + (2.25 * size);
-			list.push(new Rectangle(x, y, size, size));
+			x = start_x + (0.75 * width);
+			y -= height * 0.5;
+			list.push(new Rectangle(x, y, width, height));
+			x = start_x + (2.25 * width);
+			list.push(new Rectangle(x, y, width, height));
 			return list;
 		}
 		
@@ -556,32 +562,33 @@ package
 			// Clear board
 			canvasBD.fillRect(canvasBD.rect, 0xFF000000);
 			// Draw the hexagon tiles
-			var size:int = HEX_SIZE;
+			var width:int = HEX_WIDTH;
+			var height:int = HEX_HEIGHT;
 			var start_x:int = BOARD_TOP_LEFT.x;
-			var start_y:int = BOARD_TOP_LEFT.y + (size / 2);
+			var start_y:int = BOARD_TOP_LEFT.y + (height / 2);
 			var x:int = start_x;
 			var y:int = start_y;
 			for (var i:int = 0; i < 5; i++) 
 			{
 				for (var j:int = 0; j < 5; j++) 
 				{
-					if ((i * 5) + j == hex_select) drawHex(x, y, size,  0xFFCC00);
-					else if (i == 2 && j == 2) drawHex(x, y, size,  0xFF0000);
-					else drawHex(x, y, size,  0xFFFFFF);
-					x += size * 0.75;
-					if (j % 2 == 0) y -= size * 0.5;
-					else y += size * 0.5;
+					if ((i * 5) + j == hex_select) drawHex(x, y, width, height, 0xFFCC00);
+					else if (i == 2 && j == 2) drawHex(x, y, width, height, 0xFF0000);
+					else drawHex(x, y, width, height, 0xFFFFFF);
+					x += width * 0.75;
+					if (j % 2 == 0) y -= height * 0.5;
+					else y += height * 0.5;
 				}
-				x = 25;
-				y += size * 1.5;
+				x = start_x;
+				y += height * 1.5;
 			}
-			x = start_x + (0.75 * size);
-			y -= size * 0.5;
-			if (hex_select == 25) drawHex(x, y, size,  0xFFCC00);
-			else drawHex(x, y, size, 0xFFFFFF);
-			x = start_x + (2.25 * size);
-			if (hex_select == 26) drawHex(x, y, size,  0xFFCC00);
-			else drawHex(x, y, size, 0xFFFFFF);
+			x = start_x + (0.75 * width);
+			y -= height * 0.5;
+			if (hex_select == 25) drawHex(x, y, width, height, 0xFFCC00);
+			else drawHex(x, y, width, height, 0xFFFFFF);
+			x = start_x + (2.25 * width);
+			if (hex_select == 26) drawHex(x, y, width, height, 0xFFCC00);
+			else drawHex(x, y, width, height, 0xFFFFFF);
 			// Draw buttons
 			for (i = 0; i < buttons.length; i++) 
 			{
@@ -625,7 +632,7 @@ package
 						color_value = 0xFF808080;
 						break;
 				}
-				drawHex(bounding_box[j].x + 20, bounding_box[j].y + 20, HEX_SIZE - 40, color_value);
+				drawHex(bounding_box[j].x + 20, bounding_box[j].y + 15, HEX_WIDTH - 40, HEX_HEIGHT - 30, color_value);
 			}
 		}
 		
@@ -634,28 +641,29 @@ package
 		 * 
 		 * @param	x - X coordinate of top left bounding box
 		 * @param	y - Y coordinate of top left bounding box
-		 * @param	width_height - The width and height magnitude
+		 * @param	width - The width of the hexagon
+		 * @param	height - The height of the hexagon
 		 * @param	outline_strength - The strength of the outline
 		 */
-		private function drawHex(x:Number, y:Number, width_height:Number, color:uint = 0xFFCC00, outline_strength:int = 1):void
+		private function drawHex(x:Number, y:Number, width:Number, height:Number, color:uint = 0xFFCC00, outline_strength:int = 1):void
 		{
-			var side_length:Number = width_height / 2;
-			var center_offset:Number = (width_height - side_length) / 2;
-			canvasBD.fillRect(new Rectangle(x + center_offset, y, side_length, width_height), 0xFF000000 + color);
+			var width_side_length:Number = width / 2;
+			var width_center_offset:Number = (width - width_side_length) / 2;
+			canvasBD.fillRect(new Rectangle(x + width_center_offset, y, width_side_length, height), 0xFF000000 + color);
 			var triangle_sprite:Sprite = new Sprite();
 			triangle_sprite.graphics.beginFill(color);
-			triangle_sprite.graphics.drawTriangles(Vector.<Number>([x + center_offset, y, x, y + (width_height / 2), x + center_offset, y + width_height]));
-			triangle_sprite.graphics.drawTriangles(Vector.<Number>([x + center_offset + side_length, y, x + width_height, y + (width_height / 2), x + center_offset + side_length, y + width_height]));
+			triangle_sprite.graphics.drawTriangles(Vector.<Number>([x + width_center_offset, y, x, y + (height / 2), x + width_center_offset, y + height]));
+			triangle_sprite.graphics.drawTriangles(Vector.<Number>([x + width_center_offset + width_side_length, y, x + width, y + (height / 2), x + width_center_offset + width_side_length, y + height]));
 			triangle_sprite.graphics.endFill();
 			if (outline_strength > 0) {
-				triangle_sprite.graphics.moveTo(x + center_offset, y);
+				triangle_sprite.graphics.moveTo(x + width_center_offset, y);
 				triangle_sprite.graphics.lineStyle(outline_strength);
-				triangle_sprite.graphics.lineTo(x + center_offset + side_length, y);
-				triangle_sprite.graphics.lineTo(x + width_height, y + (width_height / 2));
-				triangle_sprite.graphics.lineTo(x + center_offset + side_length, y + width_height);
-				triangle_sprite.graphics.lineTo(x + center_offset, y + width_height);
-				triangle_sprite.graphics.lineTo(x, y + (width_height / 2));
-				triangle_sprite.graphics.lineTo(x + center_offset, y);
+				triangle_sprite.graphics.lineTo(x + width_center_offset + width_side_length, y);
+				triangle_sprite.graphics.lineTo(x + width, y + (height / 2));
+				triangle_sprite.graphics.lineTo(x + width_center_offset + width_side_length, y + height);
+				triangle_sprite.graphics.lineTo(x + width_center_offset, y + height);
+				triangle_sprite.graphics.lineTo(x, y + (height / 2));
+				triangle_sprite.graphics.lineTo(x + width_center_offset, y);
 			}
 			canvasBD.draw(triangle_sprite);
 		}
