@@ -22,9 +22,15 @@ package
 	public class Main extends Sprite 
 	{
 		/**
-		 * The list of every possible board and the minimum moves to solve each one
+		 * The list of possible boards and the minimum moves to solve each one, Note: The entire list of possible boards
+		 * is too big at around 1.2 million boards
 		 */
 		[Embed(source = "Data/boards_small.txt", mimeType = "application/octet-stream")] public static var BOARDS_SET:Class;
+		
+		/**
+		 * The list of boards to be used in the main level set
+		 */
+		[Embed(source = "Data/boards_main.txt", mimeType = "application/octet-stream")] public static var BOARDS_MAIN_SET:Class;
 		
 		/**
 		 * The width of the square encompassing a hexagon tile of the board
@@ -44,12 +50,17 @@ package
 		/**
 		 * The top left corner of the area the buttons reside in
 		 */
-		private const BUTTONS_TOP_LEFT:Point = new Point(405, 50);
+		private const BUTTONS_TOP_LEFT:Point = new Point(405, 100);
 		
 		/**
 		 * The number of frames a slide (move) will take to finish
 		 */
 		private const SLIDE_FRAMES:int = 20;
+		
+		/**
+		 * The point zero, zero to avoid construction
+		 */
+		public static const ZERO_POINT:Point = new Point();
 		
 		/**
 		 * Canvas to display
@@ -60,6 +71,11 @@ package
 		 * Canvas BitmapData to be drawn on
 		 */
 		public var canvasBD:BitmapData;
+		
+		/**
+		 * BitmapData for the background
+		 */
+		public var backgroundBD:BitmapData;
 		
 		/**
 		 * List of textboxes
@@ -107,6 +123,11 @@ package
 		 * The set of states leading to the solution
 		 */
 		private var solution:Vector.<String>;
+		
+		/**
+		 * The list of boards to be used in the main set of boards.
+		 */
+		private var mainBoardSet:Vector.<String>;
 		
 		/**
 		 * The list of lists of boards. Each list represents boards of index + 1 length
@@ -172,6 +193,8 @@ package
 			canvasBD = new BitmapData(640, 576, true, 0xFF000000);
 			canvas = new Bitmap(canvasBD);
 			addChild(canvas);
+			backgroundBD = Utils.generateBackground();
+			
 			bounding_box = Utils.getBoundingBoxes(HEX_WIDTH, HEX_HEIGHT, BOARD_TOP_LEFT);
 			board = new Rectangle(BOARD_TOP_LEFT.x, BOARD_TOP_LEFT.y, (5 * HEX_WIDTH * 0.75) + (0.25 * HEX_WIDTH), (6 * HEX_HEIGHT));
 			hex_select = -1;
@@ -225,16 +248,27 @@ package
 			slideEnd = -1;
 			slideDirection = -1;
 			
+			// Read from the list of main board states
+			mainBoardSet = new Vector.<String>();
+			var text:String = new BOARDS_MAIN_SET();
+			var text_boards:Array = text.split(",");
+			var i:int;
+			for (i = 0; i < text_boards.length; i++)
+			{
+				mainBoardSet.push(text_boards[i]);
+			}
+			
 			// Read from the list of possible board states
 			boardSet = new Vector.<Vector.<String>>();
-			for (var i:int = 0; i < 20; i++) {
+			for (i = 0; i < 20; i++) {
 				boardSet[i] = new Vector.<String>();
 			}
-			var text:String = new BOARDS_SET();
-			var text_boards:Array = text.split(",");
+			text = new BOARDS_SET();
+			text_boards = text.split(",");
 			for (i = 0; i < text_boards.length; i++) 
 			{
-				boardSet[Utils.base36To10(text_boards[i].charAt(0)) - 1].push(text_boards[i]);
+				// Do not allow generation of any of the main board set
+				if (mainBoardSet.indexOf(text_boards[i]) == -1) boardSet[Utils.base36To10(text_boards[i].charAt(0)) - 1].push(text_boards[i]);
 			}
 			
 			randomBoardState(minMoves, maxMoves);
@@ -282,17 +316,18 @@ package
 			if (slideFrame > 0) return;
 			
 			var found_hex:int = findHex();
-			if (textboxes[0].rect.containsPoint(new Point(mouseX, mouseY))) // Generate New Board
+			var click_point:Point = new Point(mouseX, mouseY);
+			if (textboxes[0].isClicked(click_point)) // Generate New Board
 			{
 				randomBoardState(minMoves, maxMoves);
 				hex_select = -1;
 			}
-			else if (textboxes[1].rect.containsPoint(new Point(mouseX, mouseY))) // Reset
+			else if (textboxes[1].isClicked(click_point)) // Reset
 			{
 				boardState = initialBoardState;
 				hex_select = -1;
 			}
-			else if (textboxes[3].rect.containsPoint(new Point(mouseX, mouseY))) // Step Hint
+			else if (textboxes[3].isClicked(click_point)) // Step Hint
 			{
 				var solution_index:int = solution.indexOf(boardState);
 				if (solution_index == -1) {
@@ -303,25 +338,25 @@ package
 				}
 				hex_select = -1;
 			}
-			else if (textboxes[5].rect.containsPoint(new Point(mouseX, mouseY))) // Maximum moves minus
+			else if (textboxes[5].isClicked(click_point)) // Maximum moves minus
 			{
 				maxMoves--;
 				if (maxMoves < minMoves) maxMoves = minMoves;
 				textboxes[4].textfield.text = "Max Moves: " + maxMoves;
 			}
-			else if (textboxes[6].rect.containsPoint(new Point(mouseX, mouseY))) // Maximum moves plus
+			else if (textboxes[6].isClicked(click_point)) // Maximum moves plus
 			{
 				maxMoves++;
 				if (maxMoves > 20) maxMoves = 20;
 				textboxes[4].textfield.text = "Max Moves: " + maxMoves;
 			}
-			else if (textboxes[8].rect.containsPoint(new Point(mouseX, mouseY))) // Minimum moves minus
+			else if (textboxes[8].isClicked(click_point)) // Minimum moves minus
 			{
 				minMoves--;
 				if (minMoves < 1) minMoves = 1;
 				textboxes[7].textfield.text = "Min Moves: " + minMoves;
 			}
-			else if (textboxes[9].rect.containsPoint(new Point(mouseX, mouseY))) // Minimum moves plus
+			else if (textboxes[9].isClicked(click_point)) // Minimum moves plus
 			{
 				minMoves++;
 				if (minMoves > maxMoves) minMoves = maxMoves;
@@ -414,10 +449,8 @@ package
 			}
 			parseSolution(boardSet[index][r - (sum - boardSet[index].length)]);
 			boardState = Utils.convertCompressedBoard(boardSet[index][r - (sum - boardSet[index].length)]);
+			backgroundBD = Utils.generateBackground(Math.floor(Math.random() * int.MAX_VALUE));
 			initialBoardState = boardState;
-			
-			/// TODO: Remove this
-			trace(boardSet[index][r - (sum - boardSet[index].length)]);
 		}
 		
 		/**
@@ -470,6 +503,7 @@ package
 		{
 			// Clear board
 			canvasBD.fillRect(canvasBD.rect, 0xFF000000);
+			canvasBD.copyPixels(backgroundBD, backgroundBD.rect, ZERO_POINT);
 			// Draw the hexagon tiles from back to front
 			var width:int = HEX_WIDTH;
 			var height:int = HEX_HEIGHT;
@@ -503,8 +537,17 @@ package
 			// Draw buttons
 			for (i = 0; i < textboxes.length; i++) 
 			{
-				if (textboxes[i].isAButton) canvasBD.fillRect(textboxes[i].rect, 0xFFFFFFFF);
-				else canvasBD.fillRect(textboxes[i].rect, 0xFFC0C0C0);
+				if (!textboxes[i].visible) continue;
+				var rect:Rectangle = textboxes[i].rect;
+				if (textboxes[i].isAButton)
+				{
+					canvasBD.fillRect(rect, 0xFFD8D8D8);
+					canvasBD.fillRect(new Rectangle(rect.x + 2, rect.y + 2, rect.width - 4, rect.height - 4), 0xFFFFFFFF);
+				}
+				else
+				{
+					canvasBD.fillRect(rect, 0xFFC0C0C0);
+				}
 			}
 		}
 		

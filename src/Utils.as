@@ -2,8 +2,10 @@ package
 {
 	import flash.display.BitmapData;
 	import flash.display.Sprite;
+	import flash.geom.ColorTransform;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
+	
 	/**
 	 * The Utilities class will have helpful functions for parsing and
 	 * mutating data, the methods will be static and the class should not
@@ -387,7 +389,7 @@ package
 		 * 
 		 * @param	color - The color in hexadecimal
 		 * @param	percent - The percent to magnify the color with
-		 * @return
+		 * @return	The new color value after magnification
 		 */
 		private static function magnifyColor(color:uint, percent:Number = 0.5):uint
 		{
@@ -434,6 +436,31 @@ package
 		public static function easeIn(t:Number, b:Number, c:Number, d:Number):Number
 		{
 			return c * (t /= d) * t + b;
+		}
+		
+		/**
+		 * Generates a random background.
+		 * 
+		 * @param	seed - The seed to use in random generation
+		 * @return	The BitmapData image of the background
+		 */
+		public static function generateBackground(seed:int = 0):BitmapData
+		{
+			var display_color:uint = 0xCA88CA;
+			var r_pct:Number = ((display_color & 0xFF0000) >> 16) / 255;
+			var g_pct:Number = ((display_color & 0x00FF00) >> 8) / 255;
+			var b_pct:Number = (display_color & 0x0000FF) / 255;
+			var backgroundBD:BitmapData = new BitmapData(640, 576, true, 0xFF000000 + display_color);
+			backgroundBD.fillRect(backgroundBD.rect, 0xFF000000 + display_color);
+			var clouds:BitmapData = new BitmapData(640, 576, true);
+			clouds.perlinNoise(640, 576, 6, seed, false, true, 7, true);
+			backgroundBD.draw(clouds, null, new ColorTransform(r_pct, g_pct, b_pct));
+			for (var i:int = 0; i < 200; i++)
+			{
+				// Draw stars as white points
+				backgroundBD.fillRect(new Rectangle(Math.floor(Math.random() * 640), Math.floor(Math.random() * 576), 1, 1), 0xFFFFFFFF);
+			}
+			return backgroundBD;
 		}
 	}
 }

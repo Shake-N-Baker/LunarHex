@@ -2,6 +2,7 @@ package
 {
 	import flash.display.DisplayObjectContainer;
 	import flash.display.Sprite;
+	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.text.TextField;
 	import flash.text.TextFormat;
@@ -78,6 +79,37 @@ package
 			this.sprite.graphics.endFill();
 			this.sprite.buttonMode = isAButton;
 			container.addChild(this.sprite);
-		}	
+		}
+		
+		/**
+		 * Returns whether this textbox is clicked.
+		 * 
+		 * @param	point - The point where the click occurs
+		 * @return	Whether the textbox is clicked
+		 */
+		public function isClicked(point:Point):Boolean
+		{
+			if (this.visible == true) {
+				return rect.containsPoint(point);
+			}
+			return false;
+		}
+		
+		/**
+		 * The visibility of this textbox
+		 */
+		public function get visible():Boolean
+		{
+			return this.sprite.visible;
+		}
+		
+		/**
+		 * The visibility of this textbox
+		 */
+		public function set visible(value:Boolean):void
+		{
+			this.sprite.visible = value;
+			this.textfield.visible = value;
+		}
 	}
 }
