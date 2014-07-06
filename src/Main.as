@@ -15,12 +15,17 @@ package
 	/**
 	 * Main entry point for Lunar Hex application.
 	 * 
-	 * @version 6/22/2014
+	 * @version 7/6/2014
 	 * @author Ian Baker
 	 */
 	[Frame(factoryClass="Preloader")]
 	public class Main extends Sprite 
 	{
+		/**
+		 * The list of every possible board and the minimum moves to solve each one
+		 */
+		[Embed(source = "Data/boards_small.txt", mimeType = "application/octet-stream")] public static var BOARDS_SET:Class;
+		
 		/**
 		 * The width of the square encompassing a hexagon tile of the board
 		 */
@@ -32,9 +37,19 @@ package
 		private const HEX_HEIGHT:int = 60;
 		
 		/**
-		 * the top left corner of the square encompassing the tiled board
+		 * The top left corner of the square encompassing the tiled board
 		 */
 		private const BOARD_TOP_LEFT:Point = new Point(50, 100);
+		
+		/**
+		 * The top left corner of the area the buttons reside in
+		 */
+		private const BUTTONS_TOP_LEFT:Point = new Point(405, 50);
+		
+		/**
+		 * The number of frames a slide (move) will take to finish
+		 */
+		private const SLIDE_FRAMES:int = 20;
 		
 		/**
 		 * Canvas to display
@@ -47,9 +62,9 @@ package
 		public var canvasBD:BitmapData;
 		
 		/**
-		 * List of buttons
+		 * List of textboxes
 		 */
-		private var buttons:Vector.<Button>;
+		private var textboxes:Vector.<Textbox>;
 		
 		/**
 		 * List of the bounding boxes for each hexagon tile
@@ -94,6 +109,48 @@ package
 		private var solution:Vector.<String>;
 		
 		/**
+		 * The list of lists of boards. Each list represents boards of index + 1 length
+		 * minimum number of moves to solve. i.e. boardSet[0] is a list of boards
+		 * solved in 1 move. boardSet[1] = 2 move solves. etc.
+		 */
+		private var boardSet:Vector.<Vector.<String>>;
+		
+		/**
+		 * The number of frames left in the slide move
+		 */
+		private var slideFrame:int;
+		
+		/**
+		 * The starting index of the slide move
+		 */
+		private var slideStart:int;
+		
+		/**
+		 * The ending index of the slide move
+		 */
+		private var slideEnd:int;
+		
+		/**
+		 * The direction of the slide move
+		 */
+		private var slideDirection:int;
+		
+		/**
+		 * The board state after the slide move is complete
+		 */
+		private var slideToBoard:String;
+		
+		/**
+		 * The minimum number of moves (shortest path) a newly generated board can take
+		 */
+		private var minMoves:int;
+		
+		/**
+		 * The maximum number of moves (shortest path) a newly generated board can take
+		 */
+		private var maxMoves:int;
+		
+		/**
 		 * Default constructor and entry point into the application.
 		 */
 		public function Main():void 
@@ -115,7 +172,7 @@ package
 			canvasBD = new BitmapData(640, 576, true, 0xFF000000);
 			canvas = new Bitmap(canvasBD);
 			addChild(canvas);
-			bounding_box = getBoundingBoxes();
+			bounding_box = Utils.getBoundingBoxes(HEX_WIDTH, HEX_HEIGHT, BOARD_TOP_LEFT);
 			board = new Rectangle(BOARD_TOP_LEFT.x, BOARD_TOP_LEFT.y, (5 * HEX_WIDTH * 0.75) + (0.25 * HEX_WIDTH), (6 * HEX_HEIGHT));
 			hex_select = -1;
 			
@@ -131,31 +188,56 @@ package
 			triangle_sprite.graphics.endFill();
 			hexCheck.draw(triangle_sprite);
 			
-			// Setup buttons
-			buttons = new Vector.<Button>();
-			buttons.push(new Button(this, new Rectangle(450, 50, 150, 30), "Generate New", 5, 2));
-			buttons.push(new Button(this, new Rectangle(450, 100, 150, 30), "Reset", 5, 2));
-			buttons.push(new Button(this, new Rectangle(450, 150, 150, 30), "Moves: X", 5, 2));
-			buttons.push(new Button(this, new Rectangle(450, 200, 150, 30), "Step Hint", 5, 2));
-			
 			var font_format:TextFormat = new TextFormat();
-			font_format.size = 20;
+			font_format.size = 35;
 			font_format.font = "Arial";
-			font_format.align = TextFormatAlign.CENTER;
 			
 			youWinTextfield = new TextField();
 			youWinTextfield.defaultTextFormat = font_format;
 			youWinTextfield.selectable = false;
 			youWinTextfield.text = "You Win!";
+			youWinTextfield.width = 640;
 			youWinTextfield.textColor = 0xFFFFFF;
-			youWinTextfield.x = 135;
-			youWinTextfield.y = 8;
+			youWinTextfield.x = BOARD_TOP_LEFT.x + 85;
+			youWinTextfield.y = BOARD_TOP_LEFT.y - 85;
 			addChild(youWinTextfield);
 			youWinTextfield.visible = false;
 			
-			solution = new Vector.<String>();
+			minMoves = 1;
+			maxMoves = 20;
 			
-			newBoardState();
+			// Setup buttons
+			textboxes = new Vector.<Textbox>();
+			textboxes.push(new Textbox(true, this, new Rectangle(BUTTONS_TOP_LEFT.x + 35, BUTTONS_TOP_LEFT.y, 150, 30), "Generate New", 5, 2));
+			textboxes.push(new Textbox(true, this, new Rectangle(BUTTONS_TOP_LEFT.x + 35, BUTTONS_TOP_LEFT.y + 50, 150, 30), "Reset", 5, 2));
+			textboxes.push(new Textbox(false, this, new Rectangle(BUTTONS_TOP_LEFT.x + 35, BUTTONS_TOP_LEFT.y + 100, 150, 30), "Moves: X", 5, 2));
+			textboxes.push(new Textbox(true, this, new Rectangle(BUTTONS_TOP_LEFT.x + 35, BUTTONS_TOP_LEFT.y + 150, 150, 30), "Step Hint", 5, 2));
+			textboxes.push(new Textbox(false, this, new Rectangle(BUTTONS_TOP_LEFT.x + 35, BUTTONS_TOP_LEFT.y + 200, 150, 30), "Max Moves: " + maxMoves, 5, 2));
+			textboxes.push(new Textbox(true, this, new Rectangle(BUTTONS_TOP_LEFT.x, BUTTONS_TOP_LEFT.y + 200, 30, 30), "-", 5, 2));
+			textboxes.push(new Textbox(true, this, new Rectangle(BUTTONS_TOP_LEFT.x + 190, BUTTONS_TOP_LEFT.y + 200, 30, 30), "+", 5, 2));
+			textboxes.push(new Textbox(false, this, new Rectangle(BUTTONS_TOP_LEFT.x + 35, BUTTONS_TOP_LEFT.y + 250, 150, 30), "Min Moves: " + minMoves, 5, 2));
+			textboxes.push(new Textbox(true, this, new Rectangle(BUTTONS_TOP_LEFT.x, BUTTONS_TOP_LEFT.y + 250, 30, 30), "-", 5, 2));
+			textboxes.push(new Textbox(true, this, new Rectangle(BUTTONS_TOP_LEFT.x + 190, BUTTONS_TOP_LEFT.y + 250, 30, 30), "+", 5, 2));
+			
+			solution = new Vector.<String>();
+			slideFrame = 0;
+			slideStart = -1;
+			slideEnd = -1;
+			slideDirection = -1;
+			
+			// Read from the list of possible board states
+			boardSet = new Vector.<Vector.<String>>();
+			for (var i:int = 0; i < 20; i++) {
+				boardSet[i] = new Vector.<String>();
+			}
+			var text:String = new BOARDS_SET();
+			var text_boards:Array = text.split(",");
+			for (i = 0; i < text_boards.length; i++) 
+			{
+				boardSet[Utils.base36To10(text_boards[i].charAt(0)) - 1].push(text_boards[i]);
+			}
+			
+			randomBoardState(minMoves, maxMoves);
 			
 			addEventListener(Event.ENTER_FRAME, cycle);
 			addEventListener(MouseEvent.CLICK, clickHandle);
@@ -168,10 +250,25 @@ package
 		 */
 		private function cycle(event:Event):void
 		{
+			processSlide();
 			drawBoard();
 			var highlight_hex:int = findHex();
-			if (highlight_hex != -1) drawHex(bounding_box[highlight_hex].x, bounding_box[highlight_hex].y, HEX_WIDTH, HEX_HEIGHT);
+			if (highlight_hex != -1 && slideFrame <= 0) Utils.drawHex(canvasBD, bounding_box[highlight_hex].x, bounding_box[highlight_hex].y, HEX_WIDTH, HEX_HEIGHT);
 			drawObjectsOnBoard();
+		}
+		
+		/**
+		 * Processes the slide move and updates the game accordingly.
+		 */
+		private function processSlide():void
+		{
+			if (slideFrame > 0) {
+				slideFrame--;
+				if (slideFrame == 0) {
+					boardState = slideToBoard;
+					if (Utils.boardSolved(boardState)) youWinTextfield.visible = true;
+				}
+			}
 		}
 		
 		/**
@@ -181,31 +278,70 @@ package
 		 */
 		private function clickHandle(mouseEvent:MouseEvent):void
 		{
-			youWinTextfield.visible = false;
+			// Don't allow clicks while animating the slide move
+			if (slideFrame > 0) return;
+			
 			var found_hex:int = findHex();
-			if (buttons[0].rect.containsPoint(new Point(mouseX, mouseY))) newBoardState();
-			else if (buttons[1].rect.containsPoint(new Point(mouseX, mouseY))) boardState = initialBoardState;
-			else if (buttons[3].rect.containsPoint(new Point(mouseX, mouseY)))
+			if (textboxes[0].rect.containsPoint(new Point(mouseX, mouseY))) // Generate New Board
+			{
+				randomBoardState(minMoves, maxMoves);
+				hex_select = -1;
+			}
+			else if (textboxes[1].rect.containsPoint(new Point(mouseX, mouseY))) // Reset
+			{
+				boardState = initialBoardState;
+				hex_select = -1;
+			}
+			else if (textboxes[3].rect.containsPoint(new Point(mouseX, mouseY))) // Step Hint
 			{
 				var solution_index:int = solution.indexOf(boardState);
 				if (solution_index == -1) {
-					boardState = solution[solution.length - 1];
-				} else if (solution_index != 0) {
-					boardState = solution[solution_index - 1];
+					boardState = solution[0];
+				} else if (solution_index != solution.length - 1) {
+					var move_index:Vector.<int> = Utils.getMoveIndicies(boardState, solution[solution_index + 1]);
+					move(move_index[0], move_index[1]);
 				}
+				hex_select = -1;
 			}
-			else if (hex_select != -1)
+			else if (textboxes[5].rect.containsPoint(new Point(mouseX, mouseY))) // Maximum moves minus
 			{
-				// Attempt to move
+				maxMoves--;
+				if (maxMoves < minMoves) maxMoves = minMoves;
+				textboxes[4].textfield.text = "Max Moves: " + maxMoves;
+			}
+			else if (textboxes[6].rect.containsPoint(new Point(mouseX, mouseY))) // Maximum moves plus
+			{
+				maxMoves++;
+				if (maxMoves > 20) maxMoves = 20;
+				textboxes[4].textfield.text = "Max Moves: " + maxMoves;
+			}
+			else if (textboxes[8].rect.containsPoint(new Point(mouseX, mouseY))) // Minimum moves minus
+			{
+				minMoves--;
+				if (minMoves < 1) minMoves = 1;
+				textboxes[7].textfield.text = "Min Moves: " + minMoves;
+			}
+			else if (textboxes[9].rect.containsPoint(new Point(mouseX, mouseY))) // Minimum moves plus
+			{
+				minMoves++;
+				if (minMoves > maxMoves) minMoves = maxMoves;
+				textboxes[7].textfield.text = "Min Moves: " + minMoves;
+			}
+			else if (hex_select != -1) // Attempt to move selected hexagon to clicked hexagon
+			{
 				move(hex_select, found_hex);
 				hex_select = -1;
 			}
-			else if (found_hex != -1)
+			else if (found_hex != -1) // Select the hexagon if a piece exists on top of it
 			{
-				if (pieceAtIndex(found_hex, boardState)) hex_select = found_hex;
+				if (Utils.pieceAtIndex(found_hex, boardState)) hex_select = found_hex;
 			}
-			else hex_select = -1;
-			if (boardSolved(boardState)) youWinTextfield.visible = true;
+			else // Selecting outside of the board, clear selection
+			{
+				hex_select = -1;
+			}
+			
+			youWinTextfield.visible = Utils.boardSolved(boardState);
 		}
 		
 		/**
@@ -220,281 +356,88 @@ package
 			var pairs:Array = boardState.split(",");
 			var color:String;
 			var index:String;
+			var moving_color:String;
 			for (var i:int = 0; i < pairs.length; i++) 
 			{
 				color = pairs[i].match(/(.)-(\d{1,2})/)[1];
 				index = pairs[i].match(/(.)-(\d{1,2})/)[2];
-				if (int(index) == start) index = end.toString();
+				if (int(index) == start) {
+					index = end.toString();
+					moving_color = color;
+				}
 				if (i > 0) new_board += ",";
 				new_board += color + "-" + index;
 			}
 			if (new_board != boardState)
 			{
-				if (generateValidMoves(boardState).indexOf(new_board) != -1) boardState = new_board;
-			}
-		}
-		
-		/**
-		 * Returns whether the board has been solved or not.
-		 * 
-		 * @param	board_state - The board state
-		 * @return	Whether the board has been solved
-		 */
-		private function boardSolved(board_state:String):Boolean
-		{
-			return board_state.indexOf("R-12") != -1;
-		}
-		
-		/**
-		 * Generates a list of valid board states from the current.
-		 * 
-		 * @param	board_state - The board state to generate options for
-		 * @return	List of valid board states
-		 */
-		private function generateValidMoves(board_state:String):Vector.<String>
-		{
-			var valid_boards:Vector.<String> = new Vector.<String>();
-			var pairs:Array = board_state.split(",");
-			var pieces:Vector.<Array> = new Vector.<Array>;
-			for (var i:int = 0; i < pairs.length; i++)
-			{
-				pieces.push(new Array(pairs[i].match(/(.)-(\d{1,2})/)[1], int(pairs[i].match(/(.)-(\d{1,2})/)[2])));
-			}
-			var new_coordinates:Point;
-			var new_board:String;
-			var moves:int;
-			for (i = 0; i < pieces.length; i++)
-			{
-				for (var dir:int = 0; dir < 6; dir++) 
-				{
-					// Move piece in one direction until hit object or falls outside of board
-					new_coordinates = getCoordinatesFromIndex(pieces[i][1]);
-					new_coordinates = moveCoordinate(new_coordinates, dir);
-					moves = 1;
-					while (getIndexFromCoordinates(new_coordinates) != -1) 
+				var dir:int = Utils.getMoveDirection(start, end);
+				if (dir != -1) {
+					var encoded_move:int = dir;
+					if (moving_color == "R") encoded_move += 0;
+					else if (moving_color == "G") encoded_move += 6;
+					else if (moving_color == "B") encoded_move += 12;
+					else if (moving_color == "Y") encoded_move += 18;
+					else if (moving_color == "O") encoded_move += 24;
+					else if (moving_color == "P") encoded_move += 30;
+					else return;
+					if (Utils.getBoardAfterMove(boardState, encoded_move) == new_board)
 					{
-						if (pieceAtIndex(getIndexFromCoordinates(new_coordinates), board_state)) {
-							if (2 <= moves) {
-								// Move in opposite direction (just before collision)
-								if (dir == 0) new_coordinates = moveCoordinate(new_coordinates, 1);
-								if (dir == 1) new_coordinates = moveCoordinate(new_coordinates, 0);
-								if (dir == 2) new_coordinates = moveCoordinate(new_coordinates, 5);
-								if (dir == 3) new_coordinates = moveCoordinate(new_coordinates, 4);
-								if (dir == 4) new_coordinates = moveCoordinate(new_coordinates, 3);
-								if (dir == 5) new_coordinates = moveCoordinate(new_coordinates, 2);
-								// Generate new valid board
-								new_board = "";
-								for (var j:int = 0; j < pieces.length; j++) 
-								{
-									if (j > 0) new_board += ",";
-									if (i == j) new_board += pieces[j][0] + "-" + getIndexFromCoordinates(new_coordinates).toString();
-									else new_board += pieces[j][0] + "-" + pieces[j][1].toString();
-								}
-								valid_boards.push(new_board);
-								break;
-							}
-							else break;
-						}
-						new_coordinates = moveCoordinate(new_coordinates, dir);
-						moves++;
+						slideStart = start;
+						slideEnd = end;
+						slideFrame = SLIDE_FRAMES;
+						slideDirection = dir;
+						slideToBoard = new_board;
 					}
 				}
 			}
-			return valid_boards;
-		}
-		
-		/**
-		 * Returns whether a piece exists at the specified coordinates.
-		 * 
-		 * @param	index - The index to check
-		 * @param	board_state - The state of the board to check
-		 * @return	Whether a piece exists
-		 */
-		private function pieceAtIndex(index:int, board_state:String):Boolean
-		{
-			var pairs:Array = board_state.split(",");
-			for (var i:int = 0; i < pairs.length; i++) 
-			{
-				if (index == int(pairs[i].match(/(.)-(\d{1,2})/)[2])) return true;
-			}
-			return false;
-		}
-		
-		/**
-		 * Mutates the coordinate_x and coordinate_y to correspond to moving in the given direction.
-		 * 
-		 * @param	coordinate - X/Y coordinates
-		 * @param	direction - 0 = U, 1 = D, 2 = UR, 3 = UL, 4 = DR, 5 = DL
-		 */
-		private function moveCoordinate(coordinate:Point, direction:int):Point
-		{
-			var new_coordinate:Point = new Point(coordinate.x, coordinate.y);
-			switch (direction) 
-			{
-				case 0: // Up 			Y-1
-					new_coordinate.y--;
-					break;
-				case 1: // Down 		Y+1
-					new_coordinate.y++;
-					break;
-				case 2: // Up-right 	X-even? X+1 : X+1 Y-1
-					if (new_coordinate.x % 2 == 0) new_coordinate.x++;
-					else
-					{
-						new_coordinate.x++;
-						new_coordinate.y--;
-					}
-					break;
-				case 3: // Up-left 		X-even? X-1 : X-1 Y-1
-					if (new_coordinate.x % 2 == 0) new_coordinate.x--;
-					else
-					{
-						new_coordinate.x--;
-						new_coordinate.y--;
-					}
-					break;
-				case 4: // Down-right	X-odd? X+1 : X+1 Y+1
-					if (new_coordinate.x % 2 == 1) new_coordinate.x++;
-					else
-					{
-						new_coordinate.x++;
-						new_coordinate.y++;
-					}
-					break;
-				case 5: // Down-left	x-odd? X-1 : X-1 Y+1
-					if (new_coordinate.x % 2 == 1) new_coordinate.x--;
-					else
-					{
-						new_coordinate.x--;
-						new_coordinate.y++;
-					}
-					break;
-				default:
-					break;
-			}
-			return new_coordinate;
-		}
-		
-		/**
-		 * Gets the X/Y index coordinates of the hexagon, Zero-based.
-		 * 
-		 * @param	index - The index of the hexagon in the list
-		 * @return	The X/Y index coordinates of the hexagon
-		 */
-		private function getCoordinatesFromIndex(index:int):Point
-		{
-			if (index == 26) return new Point(3, 5);
-			if (index == 25) return new Point(1, 5);
-			if (0 <= index && index <= 24) return new Point(index % 5, int(index / 5));
-			return null;
-		}
-		
-		/**
-		 * Gets the index of the hexagon in the list from the X/Y index coordinates.
-		 * 
-		 * @param	coordinates - The X/Y index coordinates of the hexagon
-		 * @return	The index of the hexagon in the list
-		 */
-		private function getIndexFromCoordinates(coordinates:Point):int
-		{
-			if (coordinates.x == 3 && coordinates.y == 5) return 26;
-			if (coordinates.x == 1 && coordinates.y == 5) return 25;
-			if (0 <= coordinates.x && coordinates.x < 5 && 0 <= coordinates.y && coordinates.y < 5) return int(coordinates.y * 5) + coordinates.x;
-			return -1;
-		}
-		
-		/**
-		 * Generates a new board state that is solvable.
-		 */
-		private function newBoardState():void
-		{
-			var done:Boolean = false;
-			var open_list:Vector.<String>;
-			var closed_list:Vector.<String> = new Vector.<String>();
-			var expanded_states:Vector.<String>;
-			var i:int, j:int;
-			var dict:Dictionary;
-			while (!done)
-			{
-				dict = null;
-				dict = new Dictionary();
-				
-				closed_list.length = 0;
-				open_list = null;
-				
-				randomBoardState();
-				if (boardSolved(boardState)) continue;
-				
-				open_list = generateValidMoves(boardState);
-				closed_list.push(boardState);
-				
-				dict[boardState] = "end";
-				for (i = 0; i < open_list.length; i++) dict[open_list[i]] = boardState;
-				
-				var moves:int = 1;
-				while (moves <= 20 && !done && open_list.length > 0)
-				{
-					for (i = open_list.length - 1; i >= 0; i--)
-					{
-						if (boardSolved(open_list[i])) {
-							var next:String = open_list[i];
-							solution.length = 0;
-							while (next != "end") {
-								solution.push(next);
-								next = dict[next];
-							}
-							buttons[2].textfield.text = "Moves: " + moves.toString();
-							done = true;
-							break;
-						}
-						expanded_states = null;
-						expanded_states = generateValidMoves(open_list[i]);
-						// Add the expanded state to closed list
-						closed_list.push(open_list[i]);
-						// Remove any expanded states that are on either the open (duplicate) or closed (already tried) list
-						for (j = expanded_states.length - 1; j >= 0; j--)
-						{
-							if (closed_list.indexOf(expanded_states[j]) != -1) expanded_states.splice(j, 1);
-							else if (open_list.indexOf(expanded_states[j]) != -1) expanded_states.splice(j, 1);
-						}
-						if (expanded_states.length > 0) {
-							open_list = open_list.concat(expanded_states);
-							for (j = 0; j < expanded_states.length; j++) dict[expanded_states[j]] = open_list[i];
-						}
-						// Remove the expanded state from the open list
-						open_list.splice(i, 1);
-					}
-					moves++;
-				}
-			}
-			initialBoardState = boardState;
 		}
 		
 		/**
 		 * Randomly generates a board state.
+		 * 
+		 * @param	low - The lowest number of moves acceptable
+		 * @param	high - The highest number of moves acceptable
 		 */
-		private function randomBoardState():void
+		private function randomBoardState(low:int = 1, high:int = 20):void
 		{
-			boardState = "";
-			var num_objects:int = 2 + Math.floor(Math.random() * 5);
-			var available_spots:Vector.<int> = new Vector.<int>();
-			for (var i:int = 0; i < 27; i++) 
-			{
-				available_spots.push(i);
+			var total_size:int = 0;
+			for (var i:int = low - 1; i < high; i++) total_size += boardSet[i].length;
+			var r:int = Math.floor(Math.random() * total_size);
+			var sum:int = 0;
+			var index:int = boardSet.length - 1;
+			for (i = low - 1; i < high; i++) {
+				sum += boardSet[i].length;
+				if (sum > r) {
+					index = i;
+					break;
+				}
 			}
-			var spot:int;
-			var index:int;
-			for (i = 0; i < num_objects; i++)
-			{
-				index = Math.floor(Math.random() * available_spots.length);
-				spot = available_spots[index];
-				available_spots.splice(index, 1);
-				if (i == 0) boardState += "R-" + spot;
-				if (i == 1) boardState += ",G-" + spot;
-				if (i == 2) boardState += ",B-" + spot;
-				if (i == 3) boardState += ",Y-" + spot;
-				if (i == 4) boardState += ",O-" + spot;
-				if (i == 5) boardState += ",P-" + spot;
+			parseSolution(boardSet[index][r - (sum - boardSet[index].length)]);
+			boardState = Utils.convertCompressedBoard(boardSet[index][r - (sum - boardSet[index].length)]);
+			initialBoardState = boardState;
+			
+			/// TODO: Remove this
+			trace(boardSet[index][r - (sum - boardSet[index].length)]);
+		}
+		
+		/**
+		 * Parses the compressed format board to set the solution for the board.
+		 * 
+		 * @param	compressedBoard - The board in compressed format
+		 */
+		private function parseSolution(compressedBoard:String):void
+		{
+			var moves:int = Utils.base36To10(compressedBoard.charAt(0));
+			textboxes[2].textfield.text = "Moves: " + moves.toString();
+			var encoded_moves:Vector.<int> = new Vector.<int>();
+			var i:int;
+			for (i = 1; i <= moves; i++) encoded_moves.push(Utils.base36To10(compressedBoard.charAt(i)));
+			var next:String = Utils.convertCompressedBoard(compressedBoard);
+			solution.length = 0;
+			solution.push(next);
+			for (i = 0; i < encoded_moves.length; i++) {
+				next = Utils.getBoardAfterMove(next, encoded_moves[i]);
+				solution.push(next);
 			}
 		}
 		
@@ -521,78 +464,47 @@ package
 		}
 		
 		/**
-		 * Returns the list of bounding boxes for the hexagon tiles.
-		 * 
-		 * @return	List of bounding boxes
-		 */
-		private function getBoundingBoxes():Vector.<Rectangle>
-		{
-			var list:Vector.<Rectangle> = new Vector.<Rectangle>();
-			var width:int = HEX_WIDTH;
-			var height:int = HEX_HEIGHT;
-			var start_x:int = BOARD_TOP_LEFT.x;
-			var start_y:int = BOARD_TOP_LEFT.y + (height / 2);
-			var x:int = start_x;
-			var y:int = start_y;
-			for (var i:int = 0; i < 5; i++) 
-			{
-				for (var j:int = 0; j < 5; j++) 
-				{
-					list.push(new Rectangle(x, y, width, height));
-					x += width * 0.75;
-					if (j % 2 == 0) y -= height * 0.5;
-					else y += height * 0.5;
-				}
-				x = start_x;
-				y += height * 1.5;
-			}
-			x = start_x + (0.75 * width);
-			y -= height * 0.5;
-			list.push(new Rectangle(x, y, width, height));
-			x = start_x + (2.25 * width);
-			list.push(new Rectangle(x, y, width, height));
-			return list;
-		}
-		
-		/**
 		 * Draws the game board.
 		 */
 		private function drawBoard():void
 		{
 			// Clear board
 			canvasBD.fillRect(canvasBD.rect, 0xFF000000);
-			// Draw the hexagon tiles
+			// Draw the hexagon tiles from back to front
 			var width:int = HEX_WIDTH;
 			var height:int = HEX_HEIGHT;
 			var start_x:int = BOARD_TOP_LEFT.x;
-			var start_y:int = BOARD_TOP_LEFT.y + (height / 2);
-			var x:int = start_x;
+			var start_y:int = BOARD_TOP_LEFT.y;
+			var x:int = start_x + (width * 0.75);
 			var y:int = start_y;
-			for (var i:int = 0; i < 5; i++) 
+			var depth:int = 6;
+			var index:int = 1;
+			for (var i:int = 0; i < 11; i++)
 			{
-				for (var j:int = 0; j < 5; j++) 
+				for (var j:int = 0; j < 3; j++)
 				{
-					if ((i * 5) + j == hex_select) drawHex(x, y, width, height, 0xFFCC00);
-					else if (i == 2 && j == 2) drawHex(x, y, width, height, 0xFF0000);
-					else drawHex(x, y, width, height, 0xFFFFFF);
-					x += width * 0.75;
-					if (j % 2 == 0) y -= height * 0.5;
-					else y += height * 0.5;
+					if ((i % 2 == 0) && j == 2) break;
+					if (hex_select == index) Utils.drawHex(canvasBD, x, y, width, height, 0xFFCC00, depth);
+					else if (index == 12) Utils.drawHex(canvasBD, x, y, width, height, 0xFF0000, depth);
+					else Utils.drawHex(canvasBD, x, y, width, height, 0xFFFFFF, depth);
+					x += (width * 1.5);
+					if (index == 25) index++;
+					else index += 2;
 				}
-				x = start_x;
-				y += height * 1.5;
+				if (i % 2 == 0) {
+					x = start_x;
+					index -= 5;
+				} else {
+					x = start_x + (width * 0.75);
+					if (index == 26) index = 25;
+				}
+				y += (height * 0.5);
 			}
-			x = start_x + (0.75 * width);
-			y -= height * 0.5;
-			if (hex_select == 25) drawHex(x, y, width, height, 0xFFCC00);
-			else drawHex(x, y, width, height, 0xFFFFFF);
-			x = start_x + (2.25 * width);
-			if (hex_select == 26) drawHex(x, y, width, height, 0xFFCC00);
-			else drawHex(x, y, width, height, 0xFFFFFF);
 			// Draw buttons
-			for (i = 0; i < buttons.length; i++) 
+			for (i = 0; i < textboxes.length; i++) 
 			{
-				canvasBD.fillRect(buttons[i].rect, 0xFFFFFFFF);
+				if (textboxes[i].isAButton) canvasBD.fillRect(textboxes[i].rect, 0xFFFFFFFF);
+				else canvasBD.fillRect(textboxes[i].rect, 0xFFC0C0C0);
 			}
 		}
 		
@@ -606,7 +518,7 @@ package
 			{
 				var color:String = pairs[i].match(/(.)-(\d{1,2})/)[1];
 				var index:String = pairs[i].match(/(.)-(\d{1,2})/)[2];
-				var j:int = int(index);
+				var int_index:int = int(index);
 				var color_value:uint;
 				switch (color)
 				{
@@ -632,40 +544,52 @@ package
 						color_value = 0xFF808080;
 						break;
 				}
-				drawHex(bounding_box[j].x + 20, bounding_box[j].y + 15, HEX_WIDTH - 40, HEX_HEIGHT - 30, color_value);
+				if (slideFrame <= 0 || slideStart != int_index) { // Draw the piece if it is not currently sliding
+					Utils.drawHex(canvasBD, bounding_box[int_index].x + 20, bounding_box[int_index].y + 12, HEX_WIDTH - 40, HEX_HEIGHT - 30, color_value, 3);
+				} else {
+					// Set collision offset to one tile past the destination
+					var collision_offset_x:int = 0, collision_offset_y:int = 0;
+					if (slideDirection == 0) { // Up
+						collision_offset_y = HEX_HEIGHT * -1.0;
+					} else if (slideDirection == 1) { // Down
+						collision_offset_y = HEX_HEIGHT * 1.0;
+					} else if (slideDirection == 2) { // Up-right
+						collision_offset_x = HEX_WIDTH * 0.75;
+						collision_offset_y = HEX_HEIGHT * -0.5;
+					} else if (slideDirection == 3) { // Up-left
+						collision_offset_x = HEX_WIDTH * -0.75;
+						collision_offset_y = HEX_HEIGHT * -0.5;
+					} else if (slideDirection == 4) { // Down-right
+						collision_offset_x = HEX_WIDTH * 0.75;
+						collision_offset_y = HEX_HEIGHT * 0.5;
+					} else if (slideDirection == 5) { // Down-left
+						collision_offset_x = HEX_WIDTH * -0.75;
+						collision_offset_y = HEX_HEIGHT * 0.5;
+					}
+					// Reduce the collision offset to less than a full hexagon past the desination
+					collision_offset_x *= 0.5;
+					collision_offset_y *= 0.5;
+					var total_time:int = 0, start_x:int = 0, start_y:int = 0, end_x:int, end_y:int, tx:int = 0, ty:int = 0;
+					if (slideFrame < (SLIDE_FRAMES * 0.5)) { // Ease out of the piece past the destination
+						total_time = SLIDE_FRAMES * 0.5;
+						start_x = bounding_box[slideEnd].x + 20 + collision_offset_x;
+						start_y = bounding_box[slideEnd].y + 12 + collision_offset_y;
+						end_x = bounding_box[slideEnd].x + 20;
+						end_y = bounding_box[slideEnd].y + 12;
+						tx = Utils.easeOut(total_time - slideFrame, start_x, end_x - start_x, total_time);
+						ty = Utils.easeOut(total_time - slideFrame, start_y, end_y - start_y, total_time);
+					} else { // Ease into the piece past the destination
+						total_time = SLIDE_FRAMES * 0.5;
+						start_x = bounding_box[slideStart].x + 20;
+						start_y = bounding_box[slideStart].y + 12;
+						end_x = bounding_box[slideEnd].x + 20 + collision_offset_x;
+						end_y = bounding_box[slideEnd].y + 12 + collision_offset_y;
+						tx = Utils.easeIn(SLIDE_FRAMES - slideFrame, start_x, end_x - start_x, total_time);
+						ty = Utils.easeIn(SLIDE_FRAMES - slideFrame, start_y, end_y - start_y, total_time);
+					}
+					Utils.drawHex(canvasBD, tx, ty, HEX_WIDTH - 40, HEX_HEIGHT - 30, color_value, 3);
+				}
 			}
-		}
-		
-		/**
-		 * Draws a regular hexagon at the specified location of the given size.
-		 * 
-		 * @param	x - X coordinate of top left bounding box
-		 * @param	y - Y coordinate of top left bounding box
-		 * @param	width - The width of the hexagon
-		 * @param	height - The height of the hexagon
-		 * @param	outline_strength - The strength of the outline
-		 */
-		private function drawHex(x:Number, y:Number, width:Number, height:Number, color:uint = 0xFFCC00, outline_strength:int = 1):void
-		{
-			var width_side_length:Number = width / 2;
-			var width_center_offset:Number = (width - width_side_length) / 2;
-			canvasBD.fillRect(new Rectangle(x + width_center_offset, y, width_side_length, height), 0xFF000000 + color);
-			var triangle_sprite:Sprite = new Sprite();
-			triangle_sprite.graphics.beginFill(color);
-			triangle_sprite.graphics.drawTriangles(Vector.<Number>([x + width_center_offset, y, x, y + (height / 2), x + width_center_offset, y + height]));
-			triangle_sprite.graphics.drawTriangles(Vector.<Number>([x + width_center_offset + width_side_length, y, x + width, y + (height / 2), x + width_center_offset + width_side_length, y + height]));
-			triangle_sprite.graphics.endFill();
-			if (outline_strength > 0) {
-				triangle_sprite.graphics.moveTo(x + width_center_offset, y);
-				triangle_sprite.graphics.lineStyle(outline_strength);
-				triangle_sprite.graphics.lineTo(x + width_center_offset + width_side_length, y);
-				triangle_sprite.graphics.lineTo(x + width, y + (height / 2));
-				triangle_sprite.graphics.lineTo(x + width_center_offset + width_side_length, y + height);
-				triangle_sprite.graphics.lineTo(x + width_center_offset, y + height);
-				triangle_sprite.graphics.lineTo(x, y + (height / 2));
-				triangle_sprite.graphics.lineTo(x + width_center_offset, y);
-			}
-			canvasBD.draw(triangle_sprite);
 		}
 	}
 }
