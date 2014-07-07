@@ -17,11 +17,6 @@ package
 	public class Textbox 
 	{
 		/**
-		 * Arial Font
-		 */
-		[Embed(source = "Data/arial.ttf", fontName = "Arial", mimeType = "application/x-font")] private var font_type:Class;
-		
-		/**
 		 * The rectangle encompassing the textbox
 		 */
 		public var rect:Rectangle;

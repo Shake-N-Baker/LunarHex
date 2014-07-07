@@ -335,13 +335,41 @@ package
 		}
 		
 		/**
-		 * Draws a regular hexagon at the specified location of the given size.
+		 * Draws a hexagon letter 'e' at the specified location and the given size.
 		 * 
 		 * @param	canvasBD - The canvas bitmapData to draw on
 		 * @param	x - X coordinate of top left bounding box
 		 * @param	y - Y coordinate of top left bounding box
 		 * @param	width - The width of the hexagon
 		 * @param	height - The height of the hexagon
+		 * @param	color - The color of the hexagon
+		 * @param	outline_strength - The strength of the outline
+		 */
+		public static function drawHexE(canvasBD:BitmapData, x:Number, y:Number, width:Number, height:Number, color:uint = 0xFF0000, outline_strength:int = 6):void
+		{
+			var width_side_length:Number = width / 2;
+			var width_center_offset:Number = (width - width_side_length) / 2;
+			var e:Sprite = new Sprite();
+			e.graphics.lineStyle(outline_strength, color);
+			e.graphics.moveTo(x, y + (height / 2));
+			e.graphics.lineTo(x + width, y + (height / 2));
+			e.graphics.lineTo(x + width_center_offset + width_side_length, y);
+			e.graphics.lineTo(x + width_center_offset, y);
+			e.graphics.lineTo(x, y + (height / 2));
+			e.graphics.lineTo(x + width_center_offset, y + height);
+			e.graphics.lineTo(x + width_center_offset + width_side_length, y + height);
+			canvasBD.draw(e);
+		}
+		
+		/**
+		 * Draws a hexagon at the specified location of the given size.
+		 * 
+		 * @param	canvasBD - The canvas bitmapData to draw on
+		 * @param	x - X coordinate of top left bounding box
+		 * @param	y - Y coordinate of top left bounding box
+		 * @param	width - The width of the hexagon
+		 * @param	height - The height of the hexagon
+		 * @param	color - The color of the hexagon
 		 * @param	outline_strength - The strength of the outline
 		 * @param	depth - The depth of the hexagon
 		 */
