@@ -80,6 +80,7 @@ package
 			
 			var tf:TextField = new TextField();
 			tf.defaultTextFormat = font_format;
+			tf.embedFonts = true;
 			tf.selectable = false;
 			tf.text = "LUN  R   H  X";
 			tf.textColor = 0xFFFFFF;
@@ -93,6 +94,7 @@ package
 			
 			tf = new TextField();
 			tf.defaultTextFormat = font_format;
+			tf.embedFonts = true;
 			tf.selectable = false;
 			tf.text = "START";
 			tf.width = 640;
@@ -103,6 +105,7 @@ package
 			
 			tf = new TextField();
 			tf.defaultTextFormat = font_format;
+			tf.embedFonts = true;
 			tf.selectable = false;
 			tf.text = "RANDOM";
 			tf.width = 640;
@@ -115,6 +118,7 @@ package
 			
 			tf = new TextField();
 			tf.defaultTextFormat = font_format;
+			tf.embedFonts = true;
 			tf.selectable = false;
 			tf.text = "By: Ian Baker";
 			tf.width = 640;
@@ -125,6 +129,7 @@ package
 			
 			tf = new TextField();
 			tf.defaultTextFormat = font_format;
+			tf.embedFonts = true;
 			tf.selectable = false;
 			tf.text = "Music: Incompetech.com";
 			tf.width = 640;

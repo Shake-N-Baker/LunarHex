@@ -58,6 +58,7 @@ package
 			this.rect = rect;
 			this.textfield = new TextField();
 			this.textfield.defaultTextFormat = font_format;
+			this.textfield.embedFonts = true;
 			this.textfield.selectable = false;
 			this.textfield.width = rect.width - (2 * offset_x);
 			this.textfield.height = rect.height - (2 * offset_y);

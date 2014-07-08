@@ -16,7 +16,7 @@ package
 		/**
 		 * Arial Font
 		 */
-		[Embed(source = "Data/arial.ttf", fontName = "Arial", mimeType = "application/x-font")] private var font_type:Class;
+		[Embed(source = "Data/arial.ttf", fontName = "Arial", mimeType = "application/x-font", embedAsCFF="false")] private var font_type:Class;
 		
 		/**
 		 * The list of possible boards and the minimum moves to solve each one, Note: The entire list of possible boards

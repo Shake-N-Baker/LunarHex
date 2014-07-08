@@ -17,7 +17,7 @@ package
 	 * @author Ian Baker
 	 */
 	public class LevelSelect extends Sprite 
-	{	
+	{
 		/**
 		 * The top left point of the beginner levels
 		 */
@@ -128,6 +128,7 @@ package
 			
 			var tf:TextField = new TextField();
 			tf.defaultTextFormat = font_format;
+			tf.embedFonts = true;
 			tf.selectable = false;
 			tf.text = "BEGINNER";
 			tf.width = 640;
@@ -138,6 +139,7 @@ package
 			
 			tf = new TextField();
 			tf.defaultTextFormat = font_format;
+			tf.embedFonts = true;
 			tf.selectable = false;
 			tf.text = "INTERMEDIATE";
 			tf.width = 640;
@@ -148,6 +150,7 @@ package
 			
 			tf = new TextField();
 			tf.defaultTextFormat = font_format;
+			tf.embedFonts = true;
 			tf.selectable = false;
 			tf.text = "EXPERT";
 			tf.width = 640;
@@ -160,6 +163,7 @@ package
 			
 			tf = new TextField();
 			tf.defaultTextFormat = font_format;
+			tf.embedFonts = true;
 			tf.selectable = false;
 			tf.text = "BACK";
 			tf.width = 640;
@@ -190,6 +194,7 @@ package
 				{
 					tf = new TextField();
 					tf.defaultTextFormat = font_format;
+					tf.embedFonts = true;
 					tf.selectable = false;
 					tf.text = "" + (j + (i * 10) + 1);
 					tf.width = 50;

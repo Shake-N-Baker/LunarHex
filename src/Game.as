@@ -218,6 +218,7 @@ package
 			
 			youWinTextfield = new TextField();
 			youWinTextfield.defaultTextFormat = font_format;
+			youWinTextfield.embedFonts = true;
 			youWinTextfield.selectable = false;
 			youWinTextfield.text = "You Win!";
 			youWinTextfield.width = 640;
@@ -231,6 +232,7 @@ package
 			
 			instructionsTextfield = new TextField();
 			instructionsTextfield.defaultTextFormat = font_format;
+			instructionsTextfield.embedFonts = true;
 			instructionsTextfield.selectable = false;
 			instructionsTextfield.text = "Select the red piece and slide it to the middle hexagon to win.";
 			instructionsTextfield.width = 540;
