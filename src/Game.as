@@ -18,17 +18,6 @@ package
 	public class Game extends Sprite 
 	{
 		/**
-		 * The list of possible boards and the minimum moves to solve each one, Note: The entire list of possible boards
-		 * is too big at around 1.2 million boards
-		 */
-		[Embed(source = "Data/boards_small.txt", mimeType = "application/octet-stream")] public static var BOARDS_SET:Class;
-		
-		/**
-		 * The list of boards to be used in the main level set
-		 */
-		[Embed(source = "Data/boards_main.txt", mimeType = "application/octet-stream")] public static var BOARDS_MAIN_SET:Class;
-		
-		/**
 		 * The width of the square encompassing a hexagon tile of the board
 		 */
 		public static const HEX_WIDTH:int = 80;
@@ -52,11 +41,6 @@ package
 		 * The number of frames a slide (move) will take to finish
 		 */
 		private const SLIDE_FRAMES:int = 20;
-		
-		/**
-		 * The point zero, zero to avoid construction
-		 */
-		public static const ZERO_POINT:Point = new Point();
 		
 		/**
 		 * Canvas to display
@@ -116,19 +100,24 @@ package
 		private var youWinTextfield:TextField;
 		
 		/**
+		 * The textfield with instructions for the game
+		 */
+		private var instructionsTextfield:TextField;
+		
+		/**
 		 * The set of states leading to the solution
 		 */
 		private var solution:Vector.<String>;
 		
 		/**
-		 * The list of boards to be used in the main set of boards.
+		 * Reference to the list of boards to be used in the main set of boards.
 		 */
 		private var mainBoardSet:Vector.<String>;
 		
 		/**
-		 * The list of lists of boards. Each list represents boards of index + 1 length
-		 * minimum number of moves to solve. i.e. boardSet[0] is a list of boards
-		 * solved in 1 move. boardSet[1] = 2 move solves. etc.
+		 * Reference to the list of lists of boards. Each list represents boards of
+		 * index + 1 length minimum number of moves to solve. i.e. boardSet[0] is a
+		 * list of boards solved in 1 move. boardSet[1] = 2 move solves. etc.
 		 */
 		private var boardSet:Vector.<Vector.<String>>;
 		
@@ -173,12 +162,21 @@ package
 		private var currentLevel:int;
 		
 		/**
+		 * The current number of moves the player has taken since the initial board state
+		 */
+		private var currentMove:int;
+		
+		/**
 		 * Default constructor for the Game.
 		 * 
+		 * @param	mainBoardSet - The list of board states used in the levels
+		 * @param	boardSet - The list of lists of possible board states to generate
 		 * @param	level - The level to start the game on (zero based) or -1 if random
 		 */
-		public function Game(level:int = -1):void 
+		public function Game(mainBoardSet:Vector.<String>, boardSet:Vector.<Vector.<String>>, level:int = -1):void 
 		{
+			this.mainBoardSet = mainBoardSet;
+			this.boardSet = boardSet;
 			this.currentLevel = level;
 			addEventListener(Event.ADDED_TO_STAGE, init);
 		}
@@ -215,7 +213,7 @@ package
 			hexCheck.draw(triangle_sprite);
 			
 			var font_format:TextFormat = new TextFormat();
-			font_format.size = 35;
+			font_format.size = 64;
 			font_format.font = "Arial";
 			
 			youWinTextfield = new TextField();
@@ -224,13 +222,30 @@ package
 			youWinTextfield.text = "You Win!";
 			youWinTextfield.width = 640;
 			youWinTextfield.textColor = 0xFFFFFF;
-			youWinTextfield.x = BOARD_TOP_LEFT.x + 85;
+			youWinTextfield.x = BOARD_TOP_LEFT.x + 135;
 			youWinTextfield.y = BOARD_TOP_LEFT.y - 85;
 			addChild(youWinTextfield);
 			youWinTextfield.visible = false;
 			
+			font_format.size = 36;
+			
+			instructionsTextfield = new TextField();
+			instructionsTextfield.defaultTextFormat = font_format;
+			instructionsTextfield.selectable = false;
+			instructionsTextfield.text = "Select the red piece and slide it to the middle hexagon to win.";
+			instructionsTextfield.width = 540;
+			instructionsTextfield.height = 100;
+			instructionsTextfield.multiline = true;
+			instructionsTextfield.wordWrap = true;
+			instructionsTextfield.textColor = 0xFFFFFF;
+			instructionsTextfield.x = 50;
+			instructionsTextfield.y = 10;
+			addChild(instructionsTextfield);
+			instructionsTextfield.visible = false;
+			
 			minMoves = 1;
 			maxMoves = 20;
+			currentMove = 0;
 			
 			// Setup buttons
 			textboxes = new Vector.<Textbox>();
@@ -245,6 +260,11 @@ package
 			textboxes.push(new Textbox(true, this, new Rectangle(BUTTONS_TOP_LEFT.x, BUTTONS_TOP_LEFT.y + 250, 30, 30), "-", 5, 2));
 			textboxes.push(new Textbox(true, this, new Rectangle(BUTTONS_TOP_LEFT.x + 190, BUTTONS_TOP_LEFT.y + 250, 30, 30), "+", 5, 2));
 			textboxes.push(new Textbox(true, this, new Rectangle(BUTTONS_TOP_LEFT.x + 35, BUTTONS_TOP_LEFT.y + 350, 150, 30), "Exit", 5, 2));
+			textboxes.push(new Textbox(true, this, new Rectangle(BUTTONS_TOP_LEFT.x + 35, BUTTONS_TOP_LEFT.y + 100, 150, 30), "Next Level", 5, 2));
+			textboxes.push(new Textbox(true, this, new Rectangle(BUTTONS_TOP_LEFT.x + 35, BUTTONS_TOP_LEFT.y + 150, 150, 30), "Back Level", 5, 2));
+			textboxes.push(new Textbox(false, this, new Rectangle(BUTTONS_TOP_LEFT.x + 35, BUTTONS_TOP_LEFT.y + 200, 150, 30), "Best Clear: XX", 5, 2));
+			textboxes.push(new Textbox(false, this, new Rectangle(BUTTONS_TOP_LEFT.x + 35, BUTTONS_TOP_LEFT.y + 250, 150, 30), "Your Clear: XX", 5, 2));
+			textboxes.push(new Textbox(false, this, new Rectangle(BUTTONS_TOP_LEFT.x + 35, BUTTONS_TOP_LEFT.y, 150, 30), "Level: " + (currentLevel + 1), 5, 2));
 			
 			solution = new Vector.<String>();
 			slideFrame = 0;
@@ -252,31 +272,28 @@ package
 			slideEnd = -1;
 			slideDirection = -1;
 			
-			// Read from the list of main board states
-			mainBoardSet = new Vector.<String>();
-			var text:String = new BOARDS_MAIN_SET();
-			var text_boards:Array = text.split(",");
-			var i:int;
-			for (i = 0; i < text_boards.length; i++)
+			if (currentLevel != -1)
 			{
-				mainBoardSet.push(text_boards[i]);
+				setBoardState(currentLevel);
+				textboxes[0].visible = false;
+				textboxes[2].visible = false;
+				textboxes[3].y += 150;
+				textboxes[4].visible = false;
+				textboxes[5].visible = false;
+				textboxes[6].visible = false;
+				textboxes[7].visible = false;
+				textboxes[8].visible = false;
+				textboxes[9].visible = false;
 			}
-			
-			// Read from the list of possible board states
-			boardSet = new Vector.<Vector.<String>>();
-			for (i = 0; i < 20; i++) {
-				boardSet[i] = new Vector.<String>();
-			}
-			text = new BOARDS_SET();
-			text_boards = text.split(",");
-			for (i = 0; i < text_boards.length; i++) 
+			else
 			{
-				// Do not allow generation of any of the main board set
-				if (mainBoardSet.indexOf(text_boards[i]) == -1) boardSet[Utils.base36To10(text_boards[i].charAt(0)) - 1].push(text_boards[i]);
+				randomBoardState(minMoves, maxMoves);
+				textboxes[11].visible = false;
+				textboxes[12].visible = false;
+				textboxes[13].visible = false;
+				textboxes[14].visible = false;
+				textboxes[15].visible = false;
 			}
-			
-			if (currentLevel != -1) setBoardState(currentLevel);
-			else randomBoardState(minMoves, maxMoves);
 			
 			addEventListener(Event.ENTER_FRAME, cycle);
 			addEventListener(MouseEvent.CLICK, clickHandle);
@@ -304,8 +321,25 @@ package
 			if (slideFrame > 0) {
 				slideFrame--;
 				if (slideFrame == 0) {
+					currentMove++;
+					// Hide the instructions if a move is complete on level 1
+					instructionsTextfield.visible = (currentLevel == 0 && currentMove == 0);
 					boardState = slideToBoard;
 					youWinTextfield.visible = Utils.boardSolved(boardState);
+					if (Utils.boardSolved(boardState) && currentLevel != -1) {
+						// Cleared the board, player wins
+						PlayerData.setSolveMoves(currentLevel, currentMove);
+						textboxes[11].isAButton = (currentLevel != 29 && PlayerData.solveMoves[currentLevel] != -1);
+						textboxes[14].textfield.text = "Your Clear: " + PlayerData.solveMoves[currentLevel];
+						// Show best/your clear
+						textboxes[13].visible = true;
+						textboxes[14].visible = true;
+						if (PlayerData.solveMoves[currentLevel] == (solution.length - 1)) {
+							// Show step hint
+							textboxes[3].visible = true;
+							PlayerData.setLevelState(currentLevel, 1);
+						}
+					}
 				}
 			}
 		}
@@ -330,6 +364,7 @@ package
 			else if (textboxes[1].isClicked(click_point)) // Reset
 			{
 				boardState = initialBoardState;
+				currentMove = 0;
 				hex_select = -1;
 			}
 			else if (textboxes[3].isClicked(click_point)) // Step Hint
@@ -370,6 +405,14 @@ package
 			else if (textboxes[10].isClicked(click_point)) // Exit game
 			{
 				dispatchEvent(new CustomEvent(CustomEvent.EXIT));
+			}
+			else if (textboxes[11].isClicked(click_point)) // Next level
+			{
+				if (currentLevel < 29) setBoardState(currentLevel + 1);
+			}
+			else if (textboxes[12].isClicked(click_point)) // Back level
+			{
+				if (currentLevel > 0) setBoardState(currentLevel - 1);
 			}
 			else if (hex_select != -1) // Attempt to move selected hexagon to clicked hexagon
 			{
@@ -444,9 +487,31 @@ package
 		private function setBoardState(level:int):void
 		{
 			currentLevel = level;
+			instructionsTextfield.visible = (currentLevel == 0);
+			textboxes[15].textfield.text = "Level: " + (currentLevel + 1);
+			if (PlayerData.solveMoves[level] == -1) textboxes[14].textfield.text = "Your Clear: 99";
+			else textboxes[14].textfield.text = "Your Clear: " + PlayerData.solveMoves[level];
+			textboxes[12].isAButton = (currentLevel != 0);
+			textboxes[11].isAButton = (currentLevel != 29 && PlayerData.solveMoves[level] != -1);
 			parseSolution(mainBoardSet[level]);
+			if (PlayerData.solveMoves[level] == -1) {
+				// Hide step hint and best/your clear
+				textboxes[3].visible = false;
+				textboxes[13].visible = false;
+				textboxes[14].visible = false;
+			} else if (PlayerData.solveMoves[level] > (solution.length - 1)) {
+				// Hide step hint
+				textboxes[3].visible = false;
+				textboxes[13].visible = true;
+				textboxes[14].visible = true;
+			} else {
+				textboxes[3].visible = true;
+				textboxes[13].visible = true;
+				textboxes[14].visible = true;
+			}
 			boardState = Utils.convertCompressedBoard(mainBoardSet[level]);
 			backgroundBD = Utils.generateBackground(Math.floor(Math.random() * int.MAX_VALUE));
+			currentMove = 0;
 			initialBoardState = boardState;
 		}
 		
@@ -473,6 +538,7 @@ package
 			parseSolution(boardSet[index][r - (sum - boardSet[index].length)]);
 			boardState = Utils.convertCompressedBoard(boardSet[index][r - (sum - boardSet[index].length)]);
 			backgroundBD = Utils.generateBackground(Math.floor(Math.random() * int.MAX_VALUE));
+			currentMove = 0;
 			initialBoardState = boardState;
 		}
 		
@@ -485,6 +551,7 @@ package
 		{
 			var moves:int = Utils.base36To10(compressedBoard.charAt(0));
 			textboxes[2].textfield.text = "Moves: " + moves.toString();
+			textboxes[13].textfield.text = "Best Clear: " + moves.toString();
 			var encoded_moves:Vector.<int> = new Vector.<int>();
 			var i:int;
 			for (i = 1; i <= moves; i++) encoded_moves.push(Utils.base36To10(compressedBoard.charAt(i)));
@@ -526,7 +593,7 @@ package
 		{
 			// Clear board
 			canvasBD.fillRect(canvasBD.rect, 0xFF000000);
-			canvasBD.copyPixels(backgroundBD, backgroundBD.rect, ZERO_POINT);
+			canvasBD.copyPixels(backgroundBD, backgroundBD.rect, Main.ZERO_POINT);
 			// Draw the hexagon tiles from back to front
 			var width:int = HEX_WIDTH;
 			var height:int = HEX_HEIGHT;

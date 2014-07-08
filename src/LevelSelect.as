@@ -19,9 +19,39 @@ package
 	public class LevelSelect extends Sprite 
 	{	
 		/**
-		 * The top left point of the levels
+		 * The top left point of the beginner levels
 		 */
-		private const LEVEL_HEX_TOP_LEFT:Point = new Point(20, 100);
+		private const BEGINNER_LEVEL_HEX_TOP_LEFT:Point = new Point(350, 20);
+		
+		/**
+		 * The top left point of the intermediate levels
+		 */
+		private const INTERMEDIATE_LEVEL_HEX_TOP_LEFT:Point = new Point(10, 170);
+		
+		/**
+		 * The top left point of the expert levels
+		 */
+		private const EXPERT_LEVEL_HEX_TOP_LEFT:Point = new Point(350, 320);
+		
+		/**
+		 * The width of a level hex
+		 */
+		private const LEVEL_HEX_WIDTH:int = 50;
+		
+		/**
+		 * The height of a level hex
+		 */
+		private const LEVEL_HEX_HEIGHT:int = 50;
+		
+		/**
+		 * The buffer distance in the x direction between level hexagons
+		 */
+		private const LEVEL_HEX_BUFFER_X:int = 16;
+		
+		/**
+		 * The buffer distance in the y direction between level hexagons
+		 */
+		private const LEVEL_HEX_BUFFER_Y:int = 10;
 		
 		/**
 		 * Canvas to display
@@ -54,6 +84,16 @@ package
 		private var backButton:Sprite;
 		
 		/**
+		 * The highest level eligible to play
+		 */
+		private var highestLevel:int;
+		
+		/**
+		 * The states of each level where: 1 = best solution
+		 */
+		private var levelStates:Vector.<int>;
+		
+		/**
 		 * Default constructor for the Level Select Menu.
 		 */
 		public function LevelSelect():void 
@@ -73,11 +113,13 @@ package
 			// Entry point
 			background = Utils.generateBackground(Math.floor(Math.random() * int.MAX_VALUE));
 			canvasBD = new BitmapData(640, 576);
-			canvasBD.copyPixels(background, background.rect, new Point());
+			canvasBD.copyPixels(background, background.rect, Main.ZERO_POINT);
 			canvas = new Bitmap(canvasBD);
 			addChild(canvas);
 			
-			drawCanvas();
+			if (PlayerData.solveMoves.indexOf(-1) == -1) highestLevel = 29;
+			else highestLevel = PlayerData.solveMoves.indexOf(-1);
+			levelStates = PlayerData.levelState;
 			
 			textfields = new Vector.<TextField>();
 			var font_format:TextFormat = new TextFormat();
@@ -89,8 +131,8 @@ package
 			tf.selectable = false;
 			tf.text = "BEGINNER";
 			tf.width = 640;
-			tf.x = 190;
-			tf.y = 20;
+			tf.x = 70;
+			tf.y = 78;
 			addChild(tf);
 			textfields.push(tf);
 			
@@ -99,8 +141,8 @@ package
 			tf.selectable = false;
 			tf.text = "INTERMEDIATE";
 			tf.width = 640;
-			tf.x = 140;
-			tf.y = 175;
+			tf.x = 275;
+			tf.y = 227;
 			addChild(tf);
 			textfields.push(tf);
 			
@@ -109,8 +151,8 @@ package
 			tf.selectable = false;
 			tf.text = "EXPERT";
 			tf.width = 640;
-			tf.x = 220;
-			tf.y = 330;
+			tf.x = 120;
+			tf.y = 378;
 			addChild(tf);
 			textfields.push(tf);
 			
@@ -133,6 +175,17 @@ package
 			var sprite:Sprite;
 			for (var i:int = 0; i < 3; i++) 
 			{
+				var x:int, y:int;
+				if (i == 0) {
+					x = BEGINNER_LEVEL_HEX_TOP_LEFT.x + (LEVEL_HEX_WIDTH / 2) + (LEVEL_HEX_BUFFER_X / 2);
+					y = BEGINNER_LEVEL_HEX_TOP_LEFT.y;
+				} else if (i == 1) {
+					x = INTERMEDIATE_LEVEL_HEX_TOP_LEFT.x + (LEVEL_HEX_WIDTH / 2) + (LEVEL_HEX_BUFFER_X / 2);
+					y = INTERMEDIATE_LEVEL_HEX_TOP_LEFT.y;
+				} else if (i == 2) {
+					x = EXPERT_LEVEL_HEX_TOP_LEFT.x + (LEVEL_HEX_WIDTH / 2) + (LEVEL_HEX_BUFFER_X / 2);
+					y = EXPERT_LEVEL_HEX_TOP_LEFT.y;
+				}
 				for (var j:int = 0; j < 10; j++) 
 				{
 					tf = new TextField();
@@ -140,8 +193,8 @@ package
 					tf.selectable = false;
 					tf.text = "" + (j + (i * 10) + 1);
 					tf.width = 50;
-					tf.x = LEVEL_HEX_TOP_LEFT.x + j * 60;
-					tf.y = LEVEL_HEX_TOP_LEFT.y + i * 155 + 10;
+					tf.x = x;
+					tf.y = y + 10;
 					addChild(tf);
 					textfields.push(tf);
 					
@@ -149,14 +202,24 @@ package
 					sprite.graphics.beginFill(0xFFFFFF, 0);
 					sprite.graphics.drawRect(0, 0, 50, 50);
 					sprite.graphics.endFill();
-					sprite.buttonMode = true;
-					sprite.x = LEVEL_HEX_TOP_LEFT.x + j * 60;
-					sprite.y = LEVEL_HEX_TOP_LEFT.y + i * 155;
+					sprite.buttonMode = ((i * 10) + j <= highestLevel);
+					sprite.x = x;
+					sprite.y = y;
 					addChild(sprite);
 					levelButtons.push(sprite);
 					levelButtons[levelButtons.length - 1].addEventListener(MouseEvent.CLICK, clickHandle);
 					levelButtons[levelButtons.length - 1].addEventListener(MouseEvent.ROLL_OVER, rollHandle);
 					levelButtons[levelButtons.length - 1].addEventListener(MouseEvent.ROLL_OUT, rollHandle);
+					
+					if (j == 2) {
+						x -= ((LEVEL_HEX_WIDTH + LEVEL_HEX_BUFFER_X) * 2.5);
+						y += LEVEL_HEX_HEIGHT + LEVEL_HEX_BUFFER_Y;
+					} else if (j == 6) {
+						x -= ((LEVEL_HEX_WIDTH + LEVEL_HEX_BUFFER_X) * 2.5);
+						y += LEVEL_HEX_HEIGHT + LEVEL_HEX_BUFFER_Y;
+					} else if (j != 9) {
+						x += LEVEL_HEX_WIDTH + LEVEL_HEX_BUFFER_X;
+					}
 				}
 			}
 			
@@ -169,6 +232,8 @@ package
 			backButton.y = 490;
 			addChild(backButton);
 			
+			drawCanvas();
+			
 			backButton.addEventListener(MouseEvent.CLICK, clickHandle);
 			backButton.addEventListener(MouseEvent.ROLL_OVER, rollHandle);
 			backButton.addEventListener(MouseEvent.ROLL_OUT, rollHandle);
@@ -179,14 +244,38 @@ package
 		 */
 		private function drawCanvas():void
 		{
-			canvasBD.copyPixels(background, background.rect, new Point());
+			canvasBD.copyPixels(background, background.rect, Main.ZERO_POINT);
 			for (var i:int = 0; i < 3; i++) {
 				var color:uint = 0x0081B9;
-				if (i == 1) color = 0xCC651F;
-				if (i == 2) color = 0x980000;
+				var x:int, y:int;
+				if (i == 0) {
+					x = BEGINNER_LEVEL_HEX_TOP_LEFT.x + (LEVEL_HEX_WIDTH / 2) + 10;
+					y = BEGINNER_LEVEL_HEX_TOP_LEFT.y;
+				} else if (i == 1) {
+					color = 0xCC651F;
+					x = INTERMEDIATE_LEVEL_HEX_TOP_LEFT.x + (LEVEL_HEX_WIDTH / 2) + 10;
+					y = INTERMEDIATE_LEVEL_HEX_TOP_LEFT.y;
+				} else if (i == 2) {
+					color = 0x980000;
+					x = EXPERT_LEVEL_HEX_TOP_LEFT.x + (LEVEL_HEX_WIDTH / 2) + 10;
+					y = EXPERT_LEVEL_HEX_TOP_LEFT.y;
+				}
 				for (var j:int = 0; j < 10; j++) 
 				{
-					Utils.drawHex(canvasBD, LEVEL_HEX_TOP_LEFT.x + j * 60, LEVEL_HEX_TOP_LEFT.y + i * 155, 50, 50, color);
+					if (highestLevel < (i * 10) + j) Utils.drawHex(canvasBD, x, y, LEVEL_HEX_WIDTH, LEVEL_HEX_HEIGHT, 0x808080);
+					else Utils.drawHex(canvasBD, x, y, LEVEL_HEX_WIDTH, LEVEL_HEX_HEIGHT, color);
+					if (levelStates[(i * 10) + j] == 1) {
+						Utils.drawHex(canvasBD, x + LEVEL_HEX_WIDTH - 7, y - 2, 10, 10);
+					}
+					if (j == 2) {
+						x -= ((LEVEL_HEX_WIDTH + LEVEL_HEX_BUFFER_X) * 2.5);
+						y += LEVEL_HEX_HEIGHT + LEVEL_HEX_BUFFER_Y;
+					} else if (j == 6) {
+						x -= ((LEVEL_HEX_WIDTH + LEVEL_HEX_BUFFER_X) * 2.5);
+						y += LEVEL_HEX_HEIGHT + LEVEL_HEX_BUFFER_Y;
+					} else if (j != 9) {
+						x += LEVEL_HEX_WIDTH + LEVEL_HEX_BUFFER_X;
+					}
 				}
 			}
 			
@@ -195,13 +284,13 @@ package
 			var sprite:Sprite = new Sprite();
 			sprite.graphics.beginFill(0x00A2E8, 0.5);
 			sprite.graphics.lineStyle(3);
-			sprite.graphics.drawRect(180, 20, 275, 55);
+			sprite.graphics.drawRect(textfields[0].x - 5, textfields[0].y, 270, 55);
 			sprite.graphics.endFill();
 			sprite.graphics.beginFill(0xFF7F27, 0.5);
-			sprite.graphics.drawRect(135, 175, 365, 55);
+			sprite.graphics.drawRect(textfields[1].x - 5, textfields[1].y, 365, 55);
 			sprite.graphics.endFill();
 			sprite.graphics.beginFill(0xBE0000, 0.5);
-			sprite.graphics.drawRect(210, 330, 215, 55);
+			sprite.graphics.drawRect(textfields[2].x - 5, textfields[2].y, 210, 55);
 			sprite.graphics.endFill();
 			canvasBD.draw(sprite);
 		}
@@ -215,7 +304,7 @@ package
 		{
 			if (levelButtons.indexOf(mouseEvent.target) != -1) {
 				var index:int = levelButtons.indexOf(mouseEvent.target);
-				dispatchEvent(new CustomEvent(CustomEvent.LEVEL_SELECT, "" + index));
+				if (index <= highestLevel) dispatchEvent(new CustomEvent(CustomEvent.LEVEL_SELECT, "" + index));
 			} else if (mouseEvent.target == backButton) {
 				dispatchEvent(new CustomEvent(CustomEvent.LEVEL_BACK));
 			}
@@ -231,12 +320,32 @@ package
 			if (mouseEvent.type == MouseEvent.ROLL_OVER) {
 				if (levelButtons.indexOf(mouseEvent.target) != -1) {
 					// Expand the hexagon mouse is over
-					var index_i:int = int(levelButtons.indexOf(mouseEvent.target) / 10);
-					var index_j:int = levelButtons.indexOf(mouseEvent.target) % 10;
-					var color:uint = 0x00A2E8;
-					if (index_i == 1) color = 0xFF7F27;
-					if (index_i == 2) color = 0xBE0000;
-					Utils.drawHex(canvasBD, LEVEL_HEX_TOP_LEFT.x + index_j * 60 - 5, LEVEL_HEX_TOP_LEFT.y + index_i * 155 - 5, 60, 60, color);
+					var index:int = levelButtons.indexOf(mouseEvent.target);
+					if (index <= highestLevel) {
+						var index_i:int = int(index / 10);
+						var index_j:int = index % 10;
+						var color:uint = 0x00A2E8;
+						var x:int = BEGINNER_LEVEL_HEX_TOP_LEFT.x, y:int = BEGINNER_LEVEL_HEX_TOP_LEFT.y;
+						if (index_i == 1) {
+							x = INTERMEDIATE_LEVEL_HEX_TOP_LEFT.x;
+							y = INTERMEDIATE_LEVEL_HEX_TOP_LEFT.y;
+							color = 0xFF7F27;
+						} else if (index_i == 2) {
+							x = EXPERT_LEVEL_HEX_TOP_LEFT.x;
+							y = EXPERT_LEVEL_HEX_TOP_LEFT.y;
+							color = 0xBE0000;
+						}
+						if (index_j < 3) {
+							x += (LEVEL_HEX_WIDTH + LEVEL_HEX_BUFFER_X) * (index_j + 0.5);
+						} else if (index_j < 7) {
+							x += (LEVEL_HEX_WIDTH + LEVEL_HEX_BUFFER_X) * (index_j - 3);
+							y += (LEVEL_HEX_HEIGHT + LEVEL_HEX_BUFFER_Y);
+						} else {
+							x += (LEVEL_HEX_WIDTH + LEVEL_HEX_BUFFER_X) * (index_j - 6.5);
+							y += (LEVEL_HEX_HEIGHT + LEVEL_HEX_BUFFER_Y) * 2;
+						}
+						Utils.drawHex(canvasBD, x - 5, y - 5, LEVEL_HEX_WIDTH + 10, LEVEL_HEX_HEIGHT + 10, color);
+					}
 				} else if (mouseEvent.target == backButton) {
 					Utils.drawHex(canvasBD, 5, 486, 160, 70, 0xFFCC00, 0, 3);
 				}

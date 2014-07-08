@@ -34,7 +34,7 @@ package
 		/**
 		 * Whether the textbox is a button
 		 */
-		public var isAButton:Boolean;
+		private var _isAButton:Boolean;
 		
 		/**
 		 * Constructs the textbox.
@@ -48,7 +48,7 @@ package
 		 */
 		public function Textbox(isAButton:Boolean, container:DisplayObjectContainer, rect:Rectangle, text:String = "", offset_x:int = 5, offset_y:int = 2)
 		{
-			this.isAButton = isAButton;
+			this._isAButton = isAButton;
 			
 			var font_format:TextFormat = new TextFormat();
 			font_format.size = 20;
@@ -84,7 +84,7 @@ package
 		 */
 		public function isClicked(point:Point):Boolean
 		{
-			if (this.visible == true) {
+			if (this.visible && this.isAButton) {
 				return rect.containsPoint(point);
 			}
 			return false;
@@ -105,6 +105,61 @@ package
 		{
 			this.sprite.visible = value;
 			this.textfield.visible = value;
+		}
+		
+		/**
+		 * The x coordinate of the textbox
+		 */
+		public function get x():Number
+		{
+			return this.rect.x;
+		}
+		
+		/**
+		 * The x coordinate of the textbox
+		 */
+		public function set x(value:Number):void 
+		{
+			var dX:Number = value - this.rect.x;
+			this.textfield.x += dX;
+			this.sprite.x = value;
+			this.rect.x = value;
+		}
+		
+		/**
+		 * The y coordinate of the textbox
+		 */
+		public function get y():Number
+		{
+			return this.rect.y;
+		}
+		
+		/**
+		 * The y coordinate of the textbox
+		 */
+		public function set y(value:Number):void 
+		{
+			var dY:Number = value - this.rect.y;
+			this.textfield.y += dY;
+			this.sprite.y = value;
+			this.rect.y = value;
+		}
+		
+		/**
+		 * Whether the textbox is a button
+		 */
+		public function get isAButton():Boolean
+		{
+			return this._isAButton;
+		}
+		
+		/**
+		 * Whether the textbox is a button
+		 */
+		public function set isAButton(value:Boolean):void 
+		{
+			this._isAButton = value;
+			this.sprite.buttonMode = this._isAButton;
 		}
 	}
 }

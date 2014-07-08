@@ -380,8 +380,8 @@ package
 			canvasBD.fillRect(new Rectangle(x + width_center_offset, y, width_side_length, height), 0xFF000000 + color);
 			var triangle_sprite:Sprite = new Sprite();
 			triangle_sprite.graphics.beginFill(color);
-			triangle_sprite.graphics.drawTriangles(Vector.<Number>([x + width_center_offset, y, x, y + (height / 2), x + width_center_offset, y + height]));
-			triangle_sprite.graphics.drawTriangles(Vector.<Number>([x + width_center_offset + width_side_length, y, x + width, y + (height / 2), x + width_center_offset + width_side_length, y + height]));
+			triangle_sprite.graphics.drawTriangles(Vector.<Number>([x + width_center_offset + 1, y, x, y + (height / 2), x + width_center_offset + 1, y + height]));
+			triangle_sprite.graphics.drawTriangles(Vector.<Number>([x + width_center_offset + width_side_length - 1, y, x + width, y + (height / 2), x + width_center_offset + width_side_length - 1, y + height]));
 			triangle_sprite.graphics.endFill();
 			if (outline_strength > 0) {
 				triangle_sprite.graphics.moveTo(x + width_center_offset, y);

@@ -67,7 +67,7 @@ package
 			// Entry point
 			background = Utils.generateBackground(Math.floor(Math.random() * int.MAX_VALUE));
 			canvasBD = new BitmapData(640, 576);
-			canvasBD.copyPixels(background, background.rect, new Point());
+			canvasBD.copyPixels(background, background.rect, Main.ZERO_POINT);
 			canvas = new Bitmap(canvasBD);
 			addChild(canvas);
 			
@@ -164,7 +164,7 @@ package
 		 */
 		private function drawCanvas():void
 		{
-			canvasBD.copyPixels(background, background.rect, new Point());
+			canvasBD.copyPixels(background, background.rect, Main.ZERO_POINT);
 			
 			var sprite:Sprite = new Sprite();
 			sprite.graphics.beginFill(0x000000, 0.5);
