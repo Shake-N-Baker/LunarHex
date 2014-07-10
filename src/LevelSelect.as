@@ -309,8 +309,12 @@ package
 		{
 			if (levelButtons.indexOf(mouseEvent.target) != -1) {
 				var index:int = levelButtons.indexOf(mouseEvent.target);
-				if (index <= highestLevel) dispatchEvent(new CustomEvent(CustomEvent.LEVEL_SELECT, "" + index));
+				if (index <= highestLevel) {
+					SoundManager.play(SoundManager.BUTTON);
+					dispatchEvent(new CustomEvent(CustomEvent.LEVEL_SELECT, "" + index));
+				}
 			} else if (mouseEvent.target == backButton) {
+				SoundManager.play(SoundManager.BUTTON);
 				dispatchEvent(new CustomEvent(CustomEvent.LEVEL_BACK));
 			}
 		}

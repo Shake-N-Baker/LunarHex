@@ -196,8 +196,10 @@ package
 		private function clickHandle(mouseEvent:MouseEvent):void 
 		{
 			if (mouseEvent.target == startButton) {
+				SoundManager.play(SoundManager.BUTTON);
 				dispatchEvent(new CustomEvent(CustomEvent.START));
 			} else if (mouseEvent.target == randomButton) {
+				SoundManager.play(SoundManager.BUTTON);
 				dispatchEvent(new CustomEvent(CustomEvent.RANDOM));
 			}
 		}

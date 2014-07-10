@@ -2,12 +2,13 @@ package
 {
 	import flash.display.Sprite;
 	import flash.events.Event;
+	import flash.events.MouseEvent;
 	import flash.geom.Point;
 	
 	/**
 	 * Main entry point for Lunar Hex application.
 	 * 
-	 * @version 7/7/2014
+	 * @version 7/9/2014
 	 * @author Ian Baker
 	 */
 	[Frame(factoryClass="Preloader")]
@@ -62,6 +63,16 @@ package
 		public var levelMenu:LevelSelect;
 		
 		/**
+		 * FGL Advertisements
+		 */
+		private var ads:FGLAds;
+		
+		/**
+		 * The mute button
+		 */
+		private var muteButton:Sprite;
+		
+		/**
 		 * Default constructor and entry point into the application.
 		 */
 		public function Main():void 
@@ -108,7 +119,86 @@ package
 				if (mainBoardSet.indexOf(text_boards[i]) == -1) boardSet[Utils.base36To10(text_boards[i].charAt(0)) - 1].push(text_boards[i]);
 			}
 			
+			// Add the FGL Advertisement
+			ads = new FGLAds(stage, "FGL-20028612");
+			ads.addEventListener(FGLAds.EVT_API_READY, showStartupAd);
+			ads.addEventListener(FGLAds.EVT_AD_LOADING_ERROR, clearAd);
+			
+			// Add the mute button
+			muteButton = new Sprite();
+			drawMute();
+			muteButton.buttonMode = true;
+			muteButton.x = 595;
+			muteButton.y = 530;
+			addChild(muteButton);
+			
+			muteButton.addEventListener(MouseEvent.CLICK, muteHandle);
+			
 			showMenu();
+			SoundManager.startMusic();
+		}
+		
+		/**
+		 * Shows the start up advertisement.
+		 * 
+		 * @param	event - FGLAds.EVT_API_READY
+		 */
+		private function showStartupAd(event:Event):void
+		{
+			ads.removeEventListener(FGLAds.EVT_API_READY, showStartupAd);
+			ads.showAdPopup();
+			ads.addEventListener(FGLAds.EVT_AD_CLOSED, clearAd);
+		}
+		
+		/**
+		 * Clears the event listeners attached to the advertisement.
+		 * 
+		 * @param	event - FGLAds.EVT_AD_CLOSED / EVT_AD_LOADING_ERROR
+		 */
+		private function clearAd(event:Event):void
+		{
+			ads.removeEventListener(FGLAds.EVT_AD_LOADING_ERROR, clearAd);
+			if (event.type == FGLAds.EVT_AD_CLOSED) ads.removeEventListener(FGLAds.EVT_AD_CLOSED, clearAd);
+			else if (event.type == FGLAds.EVT_AD_LOADING_ERROR) ads.removeEventListener(FGLAds.EVT_API_READY, showStartupAd);
+		}
+		
+		/**
+		 * Handles clicking of the mute button.
+		 * 
+		 * @param	mouseEvent - MouseEvent.CLICK
+		 */
+		private function muteHandle(mouseEvent:MouseEvent):void 
+		{
+			PlayerData.mute = !PlayerData.mute;
+			drawMute();
+			if (PlayerData.mute) SoundManager.stopMusic();
+			else SoundManager.startMusic();
+		}
+		
+		/**
+		 * Draws the mute button.
+		 */
+		private function drawMute():void
+		{
+			muteButton.graphics.clear();
+			if (PlayerData.mute) muteButton.graphics.beginFill(0xB00000, 0.6);
+			else muteButton.graphics.beginFill(0x00A000, 0.6);
+			muteButton.graphics.drawCircle(20, 20, 20);
+			muteButton.graphics.endFill();
+			muteButton.graphics.lineStyle(2);
+			muteButton.graphics.moveTo(2, 12);
+			muteButton.graphics.lineTo(2, 28);
+			muteButton.graphics.lineTo(12, 28);
+			muteButton.graphics.lineTo(24, 38);
+			muteButton.graphics.lineTo(24, 2);
+			muteButton.graphics.lineTo(12, 12);
+			muteButton.graphics.lineTo(2, 12);
+			if (PlayerData.mute) {
+				muteButton.graphics.moveTo(28, 14);
+				muteButton.graphics.lineTo(39, 25);
+				muteButton.graphics.moveTo(39, 14);
+				muteButton.graphics.lineTo(28, 25);
+			}
 		}
 		
 		/**
@@ -120,6 +210,7 @@ package
 			menu.addEventListener(CustomEvent.START, handleCustomEvent);
 			menu.addEventListener(CustomEvent.RANDOM, handleCustomEvent);
 			addChild(menu);
+			swapChildren(muteButton, menu);
 		}
 		
 		/**
@@ -143,6 +234,7 @@ package
 			levelMenu.addEventListener(CustomEvent.LEVEL_BACK, handleCustomEvent);
 			levelMenu.addEventListener(CustomEvent.LEVEL_SELECT, handleCustomEvent);
 			addChild(levelMenu);
+			swapChildren(muteButton, levelMenu);
 		}
 		
 		/**
@@ -167,6 +259,7 @@ package
 			game = new Game(mainBoardSet, boardSet, level);
 			game.addEventListener(CustomEvent.EXIT, handleCustomEvent);
 			addChild(game);
+			swapChildren(muteButton, game);
 		}
 		
 		/**

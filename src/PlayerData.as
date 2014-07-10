@@ -16,6 +16,11 @@ package
 		private static var sol:SharedObject;
 		
 		/**
+		 * The player mute setting
+		 */
+		public static var mute:Boolean = false;
+		
+		/**
 		 * Empty constructor, pointless to construct.
 		 */
 		public function PlayerData() { }

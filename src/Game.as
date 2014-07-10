@@ -360,11 +360,13 @@ package
 			var click_point:Point = new Point(mouseX, mouseY);
 			if (textboxes[0].isClicked(click_point)) // Generate New Board
 			{
+				SoundManager.play(SoundManager.BUTTON);
 				randomBoardState(minMoves, maxMoves);
 				hex_select = -1;
 			}
 			else if (textboxes[1].isClicked(click_point)) // Reset
 			{
+				SoundManager.play(SoundManager.BUTTON);
 				boardState = initialBoardState;
 				currentMove = 0;
 				hex_select = -1;
@@ -406,14 +408,17 @@ package
 			}
 			else if (textboxes[10].isClicked(click_point)) // Exit game
 			{
+				SoundManager.play(SoundManager.BUTTON);
 				dispatchEvent(new CustomEvent(CustomEvent.EXIT));
 			}
 			else if (textboxes[11].isClicked(click_point)) // Next level
 			{
+				SoundManager.play(SoundManager.BUTTON);
 				if (currentLevel < 29) setBoardState(currentLevel + 1);
 			}
 			else if (textboxes[12].isClicked(click_point)) // Back level
 			{
+				SoundManager.play(SoundManager.BUTTON);
 				if (currentLevel > 0) setBoardState(currentLevel - 1);
 			}
 			else if (hex_select != -1) // Attempt to move selected hexagon to clicked hexagon
@@ -471,6 +476,7 @@ package
 					else return;
 					if (Utils.getBoardAfterMove(boardState, encoded_move) == new_board)
 					{
+						SoundManager.play(SoundManager.SLIDE);
 						slideStart = start;
 						slideEnd = end;
 						slideFrame = SLIDE_FRAMES;
@@ -706,6 +712,9 @@ package
 					collision_offset_y *= 0.5;
 					var total_time:int = 0, start_x:int = 0, start_y:int = 0, end_x:int, end_y:int, tx:int = 0, ty:int = 0;
 					if (slideFrame < (SLIDE_FRAMES * 0.5)) { // Ease out of the piece past the destination
+						if (slideFrame + 1 == (SLIDE_FRAMES * 0.5)) {
+							SoundManager.play(SoundManager.HIT);
+						}
 						total_time = SLIDE_FRAMES * 0.5;
 						start_x = bounding_box[slideEnd].x + 20 + collision_offset_x;
 						start_y = bounding_box[slideEnd].y + 12 + collision_offset_y;
