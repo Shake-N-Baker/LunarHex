@@ -467,6 +467,51 @@ package
 		}
 		
 		/**
+		 * Returns the path indicies as [0] = indicies along the path, [1] = indicies
+		 * at the end of the path.
+		 * 
+		 * @param	board - The board state
+		 * @param	selected_hex_index - The selected piece index
+		 * @return	The path indicies [0] = indicies along the path, [1] = indicies at the end of the path
+		 */
+		public static function getPathIndicies(board:String, selected_hex_index:int):Vector.<Vector.<int>>
+		{
+			var path_indicies:Vector.<Vector.<int>> = new Vector.<Vector.<int>>();
+			path_indicies.push(new Vector.<int>());
+			path_indicies.push(new Vector.<int>());
+			var new_coordinates:Point;
+			var moves:int;
+			for (var dir:int = 0; dir < 6; dir++) 
+			{
+				// Move piece in one direction until hit object or falls outside of board
+				new_coordinates = getCoordinatesFromIndex(selected_hex_index);
+				new_coordinates = moveCoordinate(new_coordinates, dir);
+				moves = 1;
+				while (getIndexFromCoordinates(new_coordinates) != -1) 
+				{
+					if (pieceAtIndex(getIndexFromCoordinates(new_coordinates), board)) {
+						if (2 <= moves) {
+							// Move in opposite direction (just before collision)
+							if (dir == 0) new_coordinates = moveCoordinate(new_coordinates, 1);
+							if (dir == 1) new_coordinates = moveCoordinate(new_coordinates, 0);
+							if (dir == 2) new_coordinates = moveCoordinate(new_coordinates, 5);
+							if (dir == 3) new_coordinates = moveCoordinate(new_coordinates, 4);
+							if (dir == 4) new_coordinates = moveCoordinate(new_coordinates, 3);
+							if (dir == 5) new_coordinates = moveCoordinate(new_coordinates, 2);
+							path_indicies[1].push(getIndexFromCoordinates(new_coordinates));
+							break;
+						}
+						else break;
+					}
+					path_indicies[0].push(getIndexFromCoordinates(new_coordinates));
+					new_coordinates = moveCoordinate(new_coordinates, dir);
+					moves++;
+				}
+			}
+			return path_indicies;
+		}
+		
+		/**
 		 * Generates a random background.
 		 * 
 		 * @param	seed - The seed to use in random generation

@@ -21,6 +21,11 @@ package
 		public static var mute:Boolean = false;
 		
 		/**
+		 * The player mute music setting
+		 */
+		public static var muteMusic:Boolean = false;
+		
+		/**
 		 * Kongregate API reference
 		 */
 		public static var kongregate:*;

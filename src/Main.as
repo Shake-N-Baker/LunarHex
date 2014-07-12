@@ -83,6 +83,11 @@ package
 		private var muteButton:Sprite;
 		
 		/**
+		 * The mute music button
+		 */
+		private var muteMusicButton:Sprite;
+		
+		/**
 		 * The context menu (right click menu)
 		 */
 		private var customContextMenu:ContextMenu;
@@ -146,15 +151,22 @@ package
 			muteButton.x = 595;
 			muteButton.y = 530;
 			addChild(muteButton);
-			
 			muteButton.addEventListener(MouseEvent.CLICK, muteHandle);
+			
+			muteMusicButton = new Sprite();
+			drawMusicMute();
+			muteMusicButton.buttonMode = true;
+			muteMusicButton.x = 545;
+			muteMusicButton.y = 530;
+			addChild(muteMusicButton);
+			muteMusicButton.addEventListener(MouseEvent.CLICK, muteHandle);
 			
 			if (PlayerData.kongHost) loadKongregateAPI();
 			
 			// Set the context menu (right click menu)
 			customContextMenu = new ContextMenu();
 			customContextMenu.hideBuiltInItems();
-			var inspired:ContextMenuItem = new ContextMenuItem("Inspired by Luner Lockout", false, false);
+			var inspired:ContextMenuItem = new ContextMenuItem("Inspired by Lunar Lockout", false, false);
 			var source:ContextMenuItem = new ContextMenuItem("View Source Code");
 			var author:ContextMenuItem = new ContextMenuItem("By: Ian Baker", false, false);
 			customContextMenu.customItems.push(inspired, source, author);
@@ -230,10 +242,15 @@ package
 		 */
 		private function muteHandle(mouseEvent:MouseEvent):void 
 		{
-			PlayerData.mute = !PlayerData.mute;
-			drawMute();
-			if (PlayerData.mute) SoundManager.stopMusic();
-			else SoundManager.startMusic();
+			if (mouseEvent.target == muteButton) {
+				PlayerData.mute = !PlayerData.mute;
+				drawMute();
+			} else if (mouseEvent.target == muteMusicButton) {
+				PlayerData.muteMusic = !PlayerData.muteMusic;
+				drawMusicMute();
+				if (PlayerData.muteMusic) SoundManager.stopMusic();
+				else SoundManager.startMusic();
+			}
 		}
 		
 		/**
@@ -263,6 +280,33 @@ package
 		}
 		
 		/**
+		 * Draws the mute music button.
+		 */
+		private function drawMusicMute():void
+		{
+			muteMusicButton.graphics.clear();
+			if (PlayerData.muteMusic) muteMusicButton.graphics.beginFill(0xB00000, 0.6);
+			else muteMusicButton.graphics.beginFill(0x00A000, 0.6);
+			muteMusicButton.graphics.drawCircle(20, 20, 20);
+			muteMusicButton.graphics.endFill();
+			muteMusicButton.graphics.beginFill(0x000000);
+			muteMusicButton.graphics.drawEllipse(3, 25, 12, 8);
+			muteMusicButton.graphics.drawEllipse(20, 25, 12, 8);
+			muteMusicButton.graphics.endFill();
+			muteMusicButton.graphics.lineStyle(2);
+			muteMusicButton.graphics.moveTo(14, 29);
+			muteMusicButton.graphics.lineTo(14, 7);
+			muteMusicButton.graphics.lineTo(31, 7);
+			muteMusicButton.graphics.lineTo(31, 29);
+			if (PlayerData.muteMusic) {
+				muteMusicButton.graphics.moveTo(8, 8);
+				muteMusicButton.graphics.lineTo(32, 32);
+				muteMusicButton.graphics.moveTo(32, 8);
+				muteMusicButton.graphics.lineTo(8, 32);
+			}
+		}
+		
+		/**
 		 * Shows the menu.
 		 */
 		private function showMenu():void
@@ -271,7 +315,7 @@ package
 			menu.addEventListener(CustomEvent.START, handleCustomEvent);
 			menu.addEventListener(CustomEvent.RANDOM, handleCustomEvent);
 			addChild(menu);
-			swapChildren(muteButton, menu);
+			swapChildrenAt(0, getChildIndex(menu));
 		}
 		
 		/**
@@ -295,7 +339,7 @@ package
 			levelMenu.addEventListener(CustomEvent.LEVEL_BACK, handleCustomEvent);
 			levelMenu.addEventListener(CustomEvent.LEVEL_SELECT, handleCustomEvent);
 			addChild(levelMenu);
-			swapChildren(muteButton, levelMenu);
+			swapChildrenAt(0, getChildIndex(levelMenu));
 		}
 		
 		/**
@@ -320,7 +364,7 @@ package
 			game = new Game(mainBoardSet, boardSet, level);
 			game.addEventListener(CustomEvent.EXIT, handleCustomEvent);
 			addChild(game);
-			swapChildren(muteButton, game);
+			swapChildrenAt(0, getChildIndex(game));
 		}
 		
 		/**

@@ -271,6 +271,8 @@ package
 					else Utils.drawHex(canvasBD, x, y, LEVEL_HEX_WIDTH, LEVEL_HEX_HEIGHT, color);
 					if (levelStates[(i * 10) + j] == 1) {
 						Utils.drawHex(canvasBD, x + LEVEL_HEX_WIDTH - 7, y - 2, 10, 10);
+					} else if ((i * 10) + j < highestLevel) {
+						Utils.drawHex(canvasBD, x + LEVEL_HEX_WIDTH - 7, y - 2, 10, 10, 0xB0B0B0);
 					}
 					if (j == 2) {
 						x -= ((LEVEL_HEX_WIDTH + LEVEL_HEX_BUFFER_X) * 2.5);

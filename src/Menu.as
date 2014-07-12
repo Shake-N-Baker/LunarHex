@@ -82,7 +82,7 @@ package
 			tf.defaultTextFormat = font_format;
 			tf.embedFonts = true;
 			tf.selectable = false;
-			tf.text = "LUN  R   H  X";
+			tf.text = "LUNAR   H  X";
 			tf.textColor = 0xFFFFFF;
 			tf.width = 640;
 			tf.x = 123;
@@ -182,8 +182,7 @@ package
 			sprite.graphics.endFill();
 			canvasBD.draw(sprite);
 			
-			Utils.drawHexE(canvasBD, 255, 77, 32, 40);
-			Utils.drawHexE(canvasBD, 437, 77, 32, 40);
+			Utils.drawHexE(canvasBD, 445, 77, 32, 40);
 			Utils.drawHex(canvasBD, 200, 180, 200, 150, 0xFF6060, 0, 4);
 			Utils.drawHex(canvasBD, 200, 370, 200, 150, 0x60FF60, 0, 4);
 		}

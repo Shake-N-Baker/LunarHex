@@ -167,6 +167,16 @@ package
 		private var currentMove:int;
 		
 		/**
+		 * The indicies along the paths of the currently selected piece
+		 */
+		private var moveIndicies:Vector.<int>;
+		
+		/**
+		 * The indicies at the end of the paths of the currently selected piece
+		 */
+		private var stopIndicies:Vector.<int>;
+		
+		/**
 		 * Default constructor for the Game.
 		 * 
 		 * @param	mainBoardSet - The list of board states used in the levels
@@ -274,6 +284,9 @@ package
 			slideEnd = -1;
 			slideDirection = -1;
 			
+			moveIndicies = new Vector.<int>();
+			stopIndicies = new Vector.<int>();
+			
 			if (currentLevel != -1)
 			{
 				setBoardState(currentLevel);
@@ -363,6 +376,8 @@ package
 				SoundManager.play(SoundManager.BUTTON);
 				randomBoardState(minMoves, maxMoves);
 				hex_select = -1;
+				moveIndicies.length = 0;
+				stopIndicies.length = 0;
 			}
 			else if (textboxes[1].isClicked(click_point)) // Reset
 			{
@@ -370,6 +385,8 @@ package
 				boardState = initialBoardState;
 				currentMove = 0;
 				hex_select = -1;
+				moveIndicies.length = 0;
+				stopIndicies.length = 0;
 			}
 			else if (textboxes[3].isClicked(click_point)) // Step Hint
 			{
@@ -381,6 +398,8 @@ package
 					move(move_index[0], move_index[1]);
 				}
 				hex_select = -1;
+				moveIndicies.length = 0;
+				stopIndicies.length = 0;
 			}
 			else if (textboxes[5].isClicked(click_point)) // Maximum moves minus
 			{
@@ -425,14 +444,23 @@ package
 			{
 				move(hex_select, found_hex);
 				hex_select = -1;
+				moveIndicies.length = 0;
+				stopIndicies.length = 0;
 			}
 			else if (found_hex != -1) // Select the hexagon if a piece exists on top of it
 			{
-				if (Utils.pieceAtIndex(found_hex, boardState)) hex_select = found_hex;
+				if (Utils.pieceAtIndex(found_hex, boardState)) {
+					hex_select = found_hex;
+					var path_indicies:Vector.<Vector.<int>> = Utils.getPathIndicies(boardState, hex_select);
+					moveIndicies = path_indicies[0];
+					stopIndicies = path_indicies[1];
+				}
 			}
 			else // Selecting outside of the board, clear selection
 			{
 				hex_select = -1;
+				moveIndicies.length = 0;
+				stopIndicies.length = 0;
 			}
 			
 			youWinTextfield.visible = Utils.boardSolved(boardState);
@@ -617,6 +645,8 @@ package
 				{
 					if ((i % 2 == 0) && j == 2) break;
 					if (hex_select == index) Utils.drawHex(canvasBD, x, y, width, height, 0xFFCC00, depth);
+					else if (stopIndicies.indexOf(index) != -1) Utils.drawHex(canvasBD, x, y, width, height, 0x707070, depth);
+					else if (moveIndicies.indexOf(index) != -1) Utils.drawHex(canvasBD, x, y, width, height, 0xD8D8D8, depth);
 					else if (index == 12) Utils.drawHex(canvasBD, x, y, width, height, 0xFF0000, depth);
 					else Utils.drawHex(canvasBD, x, y, width, height, 0xFFFFFF, depth);
 					x += (width * 1.5);
