@@ -106,7 +106,25 @@ package
 			removeChild(loadBarBackground);
 			removeChild(loadBar);
 			
+			handleSite();
 			startup();
+		}
+		
+		/**
+		 * Handles the game based on the url the game is located at.
+		 */
+		private function handleSite():void
+		{
+			var url:String = loaderInfo.url;
+			url = url.toLowerCase();
+			if (url.indexOf("http") == 0) {
+				var site:String = url.split("://")[1];
+				site = site.split(".com")[0];
+				if (site == "chat.kongregate" || site == "www.kongregate" || site == "assets.kongregate") {
+					// Playing swf on Kongregate, set flag to load Kongregate API after preloading
+					PlayerData.kongHost = true;
+				}
+			}
 		}
 		
 		/**

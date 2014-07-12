@@ -246,7 +246,7 @@ package
 			instructionsTextfield.visible = false;
 			
 			minMoves = 1;
-			maxMoves = 20;
+			maxMoves = 8;
 			currentMove = 0;
 			
 			// Setup buttons

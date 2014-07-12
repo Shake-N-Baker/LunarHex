@@ -1,14 +1,20 @@
 package
 {
+	import flash.display.Loader;
+	import flash.display.LoaderInfo;
 	import flash.display.Sprite;
 	import flash.events.Event;
+	import flash.events.KeyboardEvent;
 	import flash.events.MouseEvent;
 	import flash.geom.Point;
+	import flash.net.URLRequest;
+	import flash.system.Security;
+	import flash.system.System;
 	
 	/**
 	 * Main entry point for Lunar Hex application.
 	 * 
-	 * @version 7/9/2014
+	 * @version 7/11/2014
 	 * @author Ian Baker
 	 */
 	[Frame(factoryClass="Preloader")]
@@ -134,8 +140,34 @@ package
 			
 			muteButton.addEventListener(MouseEvent.CLICK, muteHandle);
 			
+			if (PlayerData.kongHost) loadKongregateAPI();
+			
 			showMenu();
 			SoundManager.startMusic();
+			
+			stage.addEventListener(KeyboardEvent.KEY_DOWN, urlDebug);
+		}
+		
+		/**
+		 * Loads the Kongregate API.
+		 */
+		private function loadKongregateAPI():void 
+		{
+			// Connect to the Kongregate API
+			var paramObj:Object = LoaderInfo(root.loaderInfo).parameters;
+			var apiPath:String = paramObj.kongregate_api_path || "http://www.kongregate.com/flash/API_AS3_Local.swf";
+			Security.allowDomain(apiPath);
+			var request:URLRequest = new URLRequest(apiPath);
+			var loader:Loader = new Loader();
+			loader.contentLoaderInfo.addEventListener(Event.COMPLETE, loadComplete);
+			loader.load(request);
+			this.addChild(loader);
+			function loadComplete(event:Event):void
+			{
+				loader.contentLoaderInfo.removeEventListener(Event.COMPLETE, loadComplete);
+				PlayerData.kongregate = event.target.content;
+				PlayerData.kongregate.services.connect();
+			}
 		}
 		
 		/**
@@ -297,6 +329,19 @@ package
 			} else if (customEvent.type == CustomEvent.EXIT) {
 				hideGame();
 				showMenu();
+			}
+		}
+		
+		/**
+		 * Debug method for getting the full url of the site the game is
+		 * hosted on.
+		 * 
+		 * @param	keyboardEvent - KeyboardEvent.DOWN
+		 */
+		private function urlDebug(keyboardEvent:KeyboardEvent):void
+		{
+			if (keyboardEvent.keyCode == 27) { // Escape Key
+				System.setClipboard(loaderInfo.url);
 			}
 		}
 	}

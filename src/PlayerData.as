@@ -21,6 +21,16 @@ package
 		public static var mute:Boolean = false;
 		
 		/**
+		 * Kongregate API reference
+		 */
+		public static var kongregate:*;
+		
+		/**
+		 * Whether the game is host on Kongregate
+		 */
+		public static var kongHost:Boolean = false;
+		
+		/**
 		 * Empty constructor, pointless to construct.
 		 */
 		public function PlayerData() { }
@@ -51,6 +61,22 @@ package
 		}
 		
 		/**
+		 * Submits the kongregate stats.
+		 */
+		private static function kongregateSubmit():void
+		{
+			var numComplete:int = 0, numPerfect:int = 0, i:int = 0;
+			for (i = 0; i < sol.data.solveMoves.length; i++) {
+				if (sol.data.solveMoves[i] != -1) numComplete++;
+			}
+			for (i = 0; i < sol.data.levelState.length; i++) {
+				if (sol.data.levelState[i] == 1) numPerfect++;
+			}
+			kongregate.stats.submit("Complete Levels", numComplete);
+			kongregate.stats.submit("Perfect Levels", numPerfect);
+		}
+		
+		/**
 		 * The states of each level, 0 = non-best solution or incomplete, 1 = best
 		 */
 		public static function get levelState():Vector.<int>
@@ -75,6 +101,7 @@ package
 			if (!sol) initialize();
 			sol.data.levelState[level] = state;
 			sol.flush();
+			if (kongHost) kongregateSubmit();
 		}
 		
 		/**
@@ -103,6 +130,7 @@ package
 			if (!sol) initialize();
 			if (sol.data.solveMoves[level] == -1 || sol.data.solveMoves[level] > moves) sol.data.solveMoves[level] = moves;
 			sol.flush();
+			if (kongHost) kongregateSubmit();
 		}
 	}
 }
