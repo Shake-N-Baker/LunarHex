@@ -3,6 +3,7 @@ package
 	import flash.display.Loader;
 	import flash.display.LoaderInfo;
 	import flash.display.Sprite;
+	import flash.events.ContextMenuEvent;
 	import flash.events.Event;
 	import flash.events.KeyboardEvent;
 	import flash.events.MouseEvent;
@@ -10,6 +11,9 @@ package
 	import flash.net.URLRequest;
 	import flash.system.Security;
 	import flash.system.System;
+	import flash.ui.ContextMenu;
+	import flash.ui.ContextMenuItem;
+	import flash.net.navigateToURL;
 	
 	/**
 	 * Main entry point for Lunar Hex application.
@@ -79,6 +83,11 @@ package
 		private var muteButton:Sprite;
 		
 		/**
+		 * The context menu (right click menu)
+		 */
+		private var customContextMenu:ContextMenu;
+		
+		/**
 		 * Default constructor and entry point into the application.
 		 */
 		public function Main():void 
@@ -142,10 +151,30 @@ package
 			
 			if (PlayerData.kongHost) loadKongregateAPI();
 			
+			// Set the context menu (right click menu)
+			customContextMenu = new ContextMenu();
+			customContextMenu.hideBuiltInItems();
+			var inspired:ContextMenuItem = new ContextMenuItem("Inspired by Luner Lockout", false, false);
+			var source:ContextMenuItem = new ContextMenuItem("View Source Code");
+			var author:ContextMenuItem = new ContextMenuItem("By: Ian Baker", false, false);
+			customContextMenu.customItems.push(inspired, source, author);
+			contextMenu = customContextMenu;
+			source.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT, viewSource);
+			
 			showMenu();
 			SoundManager.startMusic();
 			
 			stage.addEventListener(KeyboardEvent.KEY_DOWN, urlDebug);
+		}
+		
+		/**
+		 * Opens the github source code in a new window.
+		 * 
+		 * @param	contextMenuEvent - ContextMenuEvent.MENU_ITEM_SELECT
+		 */
+		private function viewSource(contextMenuEvent:ContextMenuEvent):void
+		{
+			navigateToURL(new URLRequest("https://github.com/Shake-N-Baker/LunarHex"), "_blank");
 		}
 		
 		/**
