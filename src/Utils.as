@@ -508,6 +508,10 @@ package
 					moves++;
 				}
 			}
+			// Remove indicies from those along the path that are the path end (no duplicates)
+			for (var i:int = path_indicies[0].length - 1; i >= 0; i--) {
+				if (path_indicies[1].indexOf(path_indicies[0][i]) != -1) path_indicies[0].splice(i, 1);
+			}
 			return path_indicies;
 		}
 		

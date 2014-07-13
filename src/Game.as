@@ -323,8 +323,7 @@ package
 		{
 			processSlide();
 			drawBoard();
-			var highlight_hex:int = findHex();
-			if (highlight_hex != -1 && slideFrame <= 0) Utils.drawHex(canvasBD, bounding_box[highlight_hex].x, bounding_box[highlight_hex].y, HEX_WIDTH, HEX_HEIGHT);
+			drawHighlight();
 			drawObjectsOnBoard();
 		}
 		
@@ -442,7 +441,18 @@ package
 			}
 			else if (hex_select != -1) // Attempt to move selected hexagon to clicked hexagon
 			{
-				move(hex_select, found_hex);
+				if (moveIndicies.indexOf(found_hex) != -1) {
+					// Clicked on the path, attempt to move to the end of the path
+					var path_dir:int = Utils.getMoveDirection(hex_select, found_hex);
+					for (var i:int = 0; i < stopIndicies.length; i++) {
+						if (Utils.getMoveDirection(hex_select, stopIndicies[i]) == path_dir) {
+							move(hex_select, stopIndicies[i]);
+							break;
+						}
+					}
+				} else {
+					move(hex_select, found_hex);
+				}
 				hex_select = -1;
 				moveIndicies.length = 0;
 				stopIndicies.length = 0;
@@ -675,6 +685,43 @@ package
 				else
 				{
 					canvasBD.fillRect(rect, 0xFFC0C0C0);
+				}
+			}
+		}
+		
+		/**
+		 * Draws the highlight of what hexagons are currently selected.
+		 */
+		private function drawHighlight():void
+		{
+			// Highlight when over a hexagon and not sliding
+			var highlight_hex:int = findHex();
+			if (highlight_hex != -1 && slideFrame <= 0)
+			{
+				if (hex_select == -1)
+				{
+					// No hexagon has been selected, just highlight the hexagon the mouse is over
+					Utils.drawHex(canvasBD, bounding_box[highlight_hex].x, bounding_box[highlight_hex].y, HEX_WIDTH, HEX_HEIGHT);
+				}
+				else
+				{
+					if (moveIndicies.indexOf(highlight_hex) != -1 || stopIndicies.indexOf(highlight_hex) != -1) {
+						// Highlight the path the mouse is currently over
+						var dir:int = Utils.getMoveDirection(hex_select, highlight_hex), i:int = 0;
+						for (i = 0; i < moveIndicies.length; i++) {
+							if (Utils.getMoveDirection(hex_select, moveIndicies[i]) == dir) {
+								Utils.drawHex(canvasBD, bounding_box[moveIndicies[i]].x, bounding_box[moveIndicies[i]].y, HEX_WIDTH, HEX_HEIGHT);
+							}
+						}
+						for (i = 0; i < stopIndicies.length; i++) {
+							if (Utils.getMoveDirection(hex_select, stopIndicies[i]) == dir) {
+								Utils.drawHex(canvasBD, bounding_box[stopIndicies[i]].x, bounding_box[stopIndicies[i]].y, HEX_WIDTH, HEX_HEIGHT, 0xDD7700);
+							}
+						}
+					} else {
+						// Hexagon is selected but mouse is not over a path hexagon, just highlight the hexagon the mouse is over
+						Utils.drawHex(canvasBD, bounding_box[highlight_hex].x, bounding_box[highlight_hex].y, HEX_WIDTH, HEX_HEIGHT);
+					}
 				}
 			}
 		}
