@@ -374,9 +374,6 @@ package
 			{
 				SoundManager.play(SoundManager.BUTTON);
 				randomBoardState(minMoves, maxMoves);
-				hex_select = -1;
-				moveIndicies.length = 0;
-				stopIndicies.length = 0;
 			}
 			else if (textboxes[1].isClicked(click_point)) // Reset
 			{
@@ -558,6 +555,9 @@ package
 			boardState = Utils.convertCompressedBoard(mainBoardSet[level]);
 			backgroundBD = Utils.generateBackground(Math.floor(Math.random() * int.MAX_VALUE));
 			currentMove = 0;
+			hex_select = -1;
+			moveIndicies.length = 0;
+			stopIndicies.length = 0;
 			initialBoardState = boardState;
 		}
 		
@@ -585,6 +585,9 @@ package
 			boardState = Utils.convertCompressedBoard(boardSet[index][r - (sum - boardSet[index].length)]);
 			backgroundBD = Utils.generateBackground(Math.floor(Math.random() * int.MAX_VALUE));
 			currentMove = 0;
+			hex_select = -1;
+			moveIndicies.length = 0;
+			stopIndicies.length = 0;
 			initialBoardState = boardState;
 		}
 		
